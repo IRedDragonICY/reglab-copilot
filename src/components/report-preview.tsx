@@ -1,5 +1,5 @@
 import React from 'react';
-import { ReportMetadata, AIReportData, UserImage } from '@/lib/docxBuilder';
+import { ReportMetadata, AIReportData, UserImage } from '@/lib/types';
 import { ParsedNotebook, categorizeNotebookCells } from '@/lib/parser';
 import ReactMarkdown from 'react-markdown';
 import remarkMath from 'remark-math';
@@ -144,7 +144,7 @@ interface ReportPreviewProps {
   onMetadataChange?: (data: ReportMetadata) => void;
 }
 
-export function ReportPreview({
+function ReportPreviewInner({
   metadata, notebooks, aiData, preTestImages, implImages, postTestImages,
   modulContext = '', postTest = '', onAiDataChange
 }: ReportPreviewProps) {
@@ -592,3 +592,41 @@ export function ReportPreview({
     </div>
   );
 }
+
+
+/**
+ * Memoized export. The inner component is heavy (lots of markdown parsing,
+ * KaTeX rendering, iterating notebook cells), and the host `session-tab`
+ * triggers a re-render on every metadata keystroke even when the preview
+ * inputs are unchanged. The shallow check below short-circuits those
+ * unrelated renders. (R8 #1.)
+ */
+export const ReportPreview = React.memo(ReportPreviewInner, (prev, next) => {
+  // Shallow-compare the rendering-relevant fields only. `onAiDataChange`
+  // and `onMetadataChange` are passed as fresh closures from the parent
+  // and are intentionally excluded — a parent re-render with a fresh
+  // callback should not force a preview re-render.
+  if (prev.aiData !== next.aiData) return false;
+  if (prev.notebooks !== next.notebooks) return false;
+  if (prev.modulContext !== next.modulContext) return false;
+  if (prev.postTest !== next.postTest) return false;
+  if (prev.preTestImages !== next.preTestImages) return false;
+  if (prev.implImages !== next.implImages) return false;
+  if (prev.postTestImages !== next.postTestImages) return false;
+  // Metadata is compared by the visible identity fields; other fields
+  // (laboratorium etc.) are folded into the cover page and rendered
+  // through these.
+  const m1 = prev.metadata;
+  const m2 = next.metadata;
+  return (
+    m1.nama === m2.nama &&
+    m1.nim === m2.nim &&
+    m1.judulPertemuan === m2.judulPertemuan &&
+    m1.mataPraktikum === m2.mataPraktikum &&
+    m1.hariTanggalSesi === m2.hariTanggalSesi &&
+    m1.laboratorium === m2.laboratorium &&
+    m1.dosen === m2.dosen &&
+    m1.pertemuan === m2.pertemuan &&
+    m1.reportType === m2.reportType
+  );
+});

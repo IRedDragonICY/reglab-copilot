@@ -1,62 +1,22 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import { get, set, del, clear } from 'idb-keyval';
+import {
+  get as idbGet,
+  set as idbSet,
+  del as idbDel,
+  clear as idbClear,
+} from 'idb-keyval';
+import type {
+  ModuleData,
+  PracticumSchedule,
+  UserProfile,
+  ReportSession,
+} from '@/lib/types';
 
-export type ModuleData = Record<number, { 
-  judul: string; 
-  langkah: string; 
-  pre_test?: string; 
-  post_test?: string;
-  config?: { includePreTest: boolean; includeLangkah: boolean; includePostTest: boolean };
-}>;
-
-export interface PracticumSchedule {
-  id: string;
-  mataPraktikum: string;
-  laboratorium: string;
-  dosen: string;
-  hari: string;
-  jamMulai: string;
-  jamSelesai: string;
-  customDates?: Record<number, string>;
-  moduleData?: ModuleData;
-  pdfBase64?: string;
-  pdfFileName?: string;
-  fileNameFormat?: string;
-}
-
-export interface UserProfile {
-  nama: string;
-  nim: string;
-}
-
-export interface ReportSession {
-  id: string;
-  title: string;
-  createdAt: number;
-  updatedAt: number;
-  metadata: {
-    reportType?: 'praktikum' | 'kuliah';
-    mataPraktikum: string;
-    judulPertemuan: string;
-    hariTanggalSesi: string;
-    laboratorium?: string;
-    dosen?: string;
-    pertemuan?: number;
-  };
-  files?: {
-    name: string;
-    content: string;
-  }[];
-  preTestImages?: {id: string, dataUrl: string}[];
-  implImages?: {id: string, dataUrl: string}[];
-  postTestImages?: {id: string, dataUrl: string}[];
-  
-  preTest: string;
-  modulContext: string;
-  postTest: string;
-  aiData?: any;
-}
+// Re-export domain types for backwards compatibility with existing consumers
+// that import them from `@/lib/store`. Canonical definitions live in
+// `@/lib/types`.
+export type { ModuleData, PracticumSchedule, UserProfile, ReportSession };
 
 interface AppState {
   profile: UserProfile;
@@ -76,6 +36,8 @@ interface AppState {
   isOptionsOpen: boolean;
   setOptionsOpen: (isOpen: boolean) => void;
   clearAllData: () => Promise<void>;
+  /** Replace every persisted slice with the imported payload, then reload. */
+  replaceFromBackup: (payload: import('@/lib/backup').BackupPayload) => Promise<void>;
   
   sessions: ReportSession[];
   
@@ -105,13 +67,13 @@ const DEFAULT_MK_LIST: string[] = [];
 // Custom storage for Zustand using idb-keyval
 const idbStorage = {
   getItem: async (name: string): Promise<string | null> => {
-    return (await get(name)) || null;
+    return (await idbGet(name)) || null;
   },
   setItem: async (name: string, value: string): Promise<void> => {
-    await set(name, value);
+    await idbSet(name, value);
   },
   removeItem: async (name: string): Promise<void> => {
-    await del(name);
+    await idbDel(name);
   },
 };
 
@@ -144,7 +106,55 @@ export const useAppStore = create<AppState>()(
       isOptionsOpen: false,
       setOptionsOpen: (isOpen) => set({ isOptionsOpen: isOpen }),
       clearAllData: async () => {
-        await clear();
+        await idbClear();
+        window.location.reload();
+      },
+      replaceFromBackup: async (payload) => {
+        // Migrating to a new browser via the Backup tab.
+        //
+        // We deliberately bypass Zustand's `persist` middleware here and
+        // write the IDB record directly. Reasons:
+        //  1. The persist middleware queues writes asynchronously with no
+        //     synchronous flush primitive. With multi-megabyte sessions
+        //     (notebook content + base64 images), the IDB write can take
+        //     seconds — far longer than any setTimeout we'd guess.
+        //  2. We reload the page immediately afterwards anyway, so the
+        //     in-memory Zustand state never matters.
+        //
+        // The shape we write is exactly what `persist` expects to find on
+        // the next boot: `{ state: <full state>, version: <persist version> }`
+        // serialized as JSON, stored under the persist key.
+        //
+        // No race with autosave: this action runs from the modal-confirm
+        // click, by which point the user has stopped editing for at least
+        // long enough to pick a file and review the staged summary. Any
+        // pending persist write has already flushed.
+        const current = get();
+        const nextState = {
+          profile: payload.profile,
+          mataPraktikumList: payload.mataPraktikumList ?? [],
+          schedules: payload.schedules ?? [],
+          sessions: payload.sessions ?? [],
+          manualProgress: payload.manualProgress ?? {},
+          globalFileNameFormat:
+            payload.globalFileNameFormat ?? '{nim}_{nama}_{pertemuan}_{matkul}',
+          // Preserve the local API key unless the backup explicitly carried one.
+          geminiApiKey: payload.geminiApiKey ?? current.geminiApiKey,
+          // UI state — reset so the user lands on a clean Home tab.
+          activeTab: 'home',
+          openTabs: [{ id: 'home', title: 'Home', type: 'home' as const }],
+          isCopilotOpen: false,
+          isOptionsOpen: false,
+        };
+
+        // Stringify can be expensive on multi-MB payloads but is unavoidable;
+        // the persist middleware does the same thing internally.
+        const idbRecord = JSON.stringify({ state: nextState, version: 1 });
+
+        // Direct, awaited write — no race with the persist middleware.
+        await idbSet('report-generator-storage', idbRecord);
+
+        // Reload picks up the freshly-written record on next boot.
         window.location.reload();
       },
       

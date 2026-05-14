@@ -1,5 +1,5 @@
 import { TextRun } from 'docx';
-import { sanitizeText } from './docxBuilder';
+import { sanitizeText } from './docx/text';
 
 // Expanded set of Python keywords and built-ins for comprehensive syntax highlighting
 const pythonKeywords = new Set([

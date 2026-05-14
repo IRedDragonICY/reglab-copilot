@@ -14,7 +14,7 @@ import {
   User,
   Terminal,
 } from 'lucide-react';
-import { AIReportData } from '@/lib/docxBuilder';
+import { AIReportData } from '@/lib/types';
 import { CopilotMessage, ToolCallState } from '@/hooks/use-copilot-ai';
 
 /* ---------------------------------------------------------------------------
@@ -36,14 +36,14 @@ const ToolCallViewer = ({ tool }: { tool: ToolCallState }) => {
             <CheckCircle2 className="w-3 h-3 text-[#2EA043] shrink-0" />
           )}
           <Code className="w-3 h-3 text-[#6E6E6E] shrink-0" />
-          <span className="font-mono text-[11px] truncate">
-            <span className="text-[#6E6E6E]">tool:</span>
-            <span className="text-[#2F81F7] font-medium ml-1">{tool.name}</span>
+          <span className="text-[11px] truncate">
+            <span className="text-[#6E6E6E] mr-1">Tool</span>
+            <span className="text-[#2F81F7] font-medium font-mono">{tool.name}</span>
           </span>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-[#6E6E6E]">
-            {tool.status === 'running' ? 'running' : 'done'}
+          <span className="text-[10px] text-[#6E6E6E]">
+            {tool.status === 'running' ? 'Running' : 'Completed'}
           </span>
           {expanded ? (
             <ChevronDown className="w-3 h-3 text-[#6E6E6E]" />
@@ -87,22 +87,20 @@ const AgentMessage = ({ msg, statusText }: { msg: CopilotMessage; statusText: st
 
   return (
     <div className="flex flex-col gap-2 w-full">
-      {/* Row header (Linear-style byline) */}
+      {/* Header — agent identity + live status */}
       <div className="flex items-center gap-2 h-5">
         <div className="w-4 h-4 flex items-center justify-center bg-[#0F1A2E] border border-[#1F3A66] rounded-sm">
           <Sparkles className="w-2.5 h-2.5 text-[#2F81F7]" />
         </div>
-        <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-[#EDEDED]">
-          copilot
-        </span>
+        <span className="text-[11px] font-medium text-[#EDEDED]">Copilot</span>
         {msg.isThinking && (
-          <span className="font-mono text-[10px] text-[#6E6E6E] pl-2 border-l border-[#1F1F1F] ml-1">
-            thinking…
+          <span className="text-[11px] text-[#6E6E6E] pl-2 border-l border-[#1F1F1F] ml-1">
+            Thinking
           </span>
         )}
       </div>
 
-      {/* Reasoning / thought terminal log */}
+      {/* Reasoning trace */}
       {showThoughtBox && (
         <div className="border border-[#1F1F1F] bg-[#0A0A0A] rounded-sm overflow-hidden">
           <button
@@ -116,11 +114,11 @@ const AgentMessage = ({ msg, statusText }: { msg: CopilotMessage; statusText: st
                 <Cpu className="w-3 h-3 text-[#6E6E6E]" />
               )}
               <span
-                className={`font-mono text-[10px] uppercase tracking-[0.14em] ${
-                  msg.isThinking ? 'text-[#2F81F7]' : 'text-[#A1A1A1]'
+                className={`text-[11px] ${
+                  msg.isThinking ? 'text-[#2F81F7] font-medium' : 'text-[#A1A1A1]'
                 }`}
               >
-                {msg.isThinking ? statusText || 'analyzing context' : 'reasoning trace'}
+                {msg.isThinking ? statusText || 'Analyzing context' : 'Reasoning'}
               </span>
             </div>
             {showThought ? (
@@ -137,7 +135,7 @@ const AgentMessage = ({ msg, statusText }: { msg: CopilotMessage; statusText: st
                   msg.thought
                 ) : (
                   <span className="text-[#6E6E6E] animate-pulse">
-                    // waiting for model output…
+                    Waiting for model output…
                   </span>
                 )}
                 <div ref={thoughtEndRef} />
@@ -214,27 +212,26 @@ export function CopilotPanel({
       >
         {chatHistory.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center p-8 text-center">
-            <div className="w-10 h-10 flex items-center justify-center border border-[#1F1F1F] mb-3">
+            <div className="w-10 h-10 flex items-center justify-center border border-[#1F1F1F] mb-4 rounded-sm">
               <Terminal className="w-4 h-4 text-[#4A4A4A]" />
             </div>
-            <p className="text-[11px] text-[#6E6E6E] font-mono">// copilot thread empty</p>
-            <p className="text-[11px] text-[#4A4A4A] mt-1 font-mono">
-              generate a report to begin
+            <p className="text-[12px] text-[#EDEDED] font-medium">Copilot is ready</p>
+            <p className="text-[11px] text-[#6E6E6E] mt-1 max-w-[260px]">
+              Generate a report or send a message to start the conversation.
             </p>
           </div>
         ) : (
           <div className="divide-y divide-[#1A1A1A]">
             {chatHistory.map((m, i) => {
+              const k = m.id ?? `${m.role}-${i}`;
               if (m.role === 'user') {
                 return (
-                  <div key={i} className="px-4 py-3 hover:bg-[#0C0C0C] transition-colors">
+                  <div key={k} className="px-4 py-3 hover:bg-[#0C0C0C] transition-colors">
                     <div className="flex items-center gap-2 h-5 mb-1.5">
                       <div className="w-4 h-4 flex items-center justify-center bg-[#161616] border border-[#2A2A2A] rounded-sm">
                         <User className="w-2.5 h-2.5 text-[#A1A1A1]" />
                       </div>
-                      <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-[#EDEDED]">
-                        you
-                      </span>
+                      <span className="text-[11px] font-medium text-[#EDEDED]">You</span>
                     </div>
                     <div className="pl-6 text-[13px] leading-relaxed text-[#EDEDED] whitespace-pre-wrap">
                       {m.text}
@@ -246,31 +243,25 @@ export function CopilotPanel({
               if (m.role === 'system') {
                 return (
                   <div
-                    key={i}
-                    className="px-4 py-2.5 bg-[#0C0C0C] flex items-start gap-2 font-mono text-[11px] text-[#A1A1A1]"
+                    key={k}
+                    className="px-4 py-2.5 bg-[#0C0C0C] flex items-start gap-2 text-[11px] text-[#A1A1A1]"
                   >
                     <Info className="w-3 h-3 text-[#6E6E6E] shrink-0 mt-0.5" />
-                    <span className="leading-relaxed break-words">
-                      <span className="text-[#6E6E6E] uppercase tracking-wider mr-2">
-                        [system]
-                      </span>
-                      {m.text}
-                    </span>
+                    <span className="leading-relaxed break-words">{m.text}</span>
                   </div>
                 );
               }
 
               return (
-                <div key={i} className="px-4 py-3 hover:bg-[#0C0C0C] transition-colors">
+                <div key={k} className="px-4 py-3 hover:bg-[#0C0C0C] transition-colors">
                   <AgentMessage msg={m} statusText={statusText} />
                 </div>
               );
             })}
 
             {isGenerating && !isAgentThinking && (
-              <div className="px-4 py-2.5 flex items-center gap-2 font-mono text-[11px] text-[#A1A1A1] bg-[#0C0C0C]">
+              <div className="px-4 py-2.5 flex items-center gap-2 text-[11px] text-[#A1A1A1] bg-[#0C0C0C]">
                 <Loader2 className="w-3 h-3 text-[#2F81F7] animate-spin" />
-                <span className="text-[#6E6E6E] uppercase tracking-wider">[status]</span>
                 <span>{statusText}</span>
               </div>
             )}
@@ -315,13 +306,13 @@ export function CopilotPanel({
             </SelectContent>
           </Select>
 
-          <span className="flex items-center gap-1.5 font-mono text-[10px] text-[#6E6E6E] uppercase tracking-wider">
+          <span className="flex items-center gap-1.5 text-[11px] text-[#A1A1A1]">
             <span
               className={`w-1.5 h-1.5 rounded-full ${
                 isGenerating ? 'bg-[#D29922] animate-pulse' : 'bg-[#2EA043]'
               }`}
             />
-            {isGenerating ? 'busy' : 'ready'}
+            {isGenerating ? 'Generating' : 'Ready'}
           </span>
         </div>
 
@@ -342,12 +333,12 @@ export function CopilotPanel({
         {/* Composer */}
         <div className="p-3 pt-2">
           <div className="relative border border-[#1F1F1F] focus-within:border-[#2F81F7] bg-[#0A0A0A] rounded-sm transition-colors">
-            <div className="flex items-center h-6 px-2 border-b border-[#1F1F1F] bg-[#0C0C0C]">
-              <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-[#6E6E6E]">
-                {aiPreviewData ? '> prompt (edit mode)' : '> prompt'}
+            <div className="flex items-center h-6 px-2.5 border-b border-[#1F1F1F] bg-[#0C0C0C]">
+              <span className="text-[10px] font-medium text-[#A1A1A1]">
+                {aiPreviewData ? 'Edit instructions' : 'Message Copilot'}
               </span>
-              <span className="ml-auto font-mono text-[9px] text-[#4A4A4A]">
-                ⏎ send · ⇧⏎ newline
+              <span className="ml-auto text-[10px] text-[#6E6E6E]">
+                ⏎ to send · ⇧⏎ for newline
               </span>
             </div>
             <Textarea
@@ -366,7 +357,7 @@ export function CopilotPanel({
                   : 'Generate a report first to edit…'
               }
               disabled={isGenerating}
-              className="resize-none min-h-[72px] max-h-[180px] bg-transparent border-none text-[#EDEDED] focus-visible:ring-0 focus-visible:border-none rounded-none pl-3 pr-11 py-2.5 text-[13px] leading-relaxed transition-all custom-scrollbar placeholder:text-[#4A4A4A] font-mono"
+              className="resize-none min-h-[72px] max-h-[180px] bg-transparent border-none text-[#EDEDED] focus-visible:ring-0 focus-visible:border-none rounded-none pl-3 pr-11 py-2.5 text-[13px] leading-relaxed transition-all custom-scrollbar placeholder:text-[#4A4A4A]"
             />
             <button
               onClick={() => {

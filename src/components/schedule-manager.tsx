@@ -221,8 +221,8 @@ export function ScheduleManager() {
       <header className="shrink-0 h-9 flex items-center justify-between px-3 border-b border-[#1F1F1F] bg-[#0A0A0A]">
         <div className="flex items-center gap-2">
           <Calendar className="w-3.5 h-3.5 text-[#6E6E6E]" />
-          <h2 className="text-[10px] font-semibold tracking-[0.18em] uppercase text-[#EDEDED]">
-            Practicum Schedule
+          <h2 className="text-[12px] font-semibold text-[#EDEDED]">
+            Practicum schedule
           </h2>
           <span className="font-mono text-[10px] text-[#6E6E6E] pl-2 border-l border-[#1F1F1F] ml-1">
             {store.schedules.length} rows
@@ -322,10 +322,11 @@ export function ScheduleManager() {
 
             {/* Auto-crawling zone */}
             <div className="pt-3 border-t border-[#1F1F1F]">
-              <h4 className="text-[10px] font-semibold tracking-[0.14em] uppercase text-[#EDEDED] mb-2 flex items-center gap-2">
-                <Bot className="w-3 h-3 text-[#2F81F7]" /> Module Auto-Crawl
-                <span className="font-mono text-[9px] text-[#6E6E6E] normal-case tracking-normal">
-                  // optional
+              <h4 className="text-[12px] font-semibold text-[#EDEDED] mb-2 flex items-center gap-2">
+                <Bot className="w-3.5 h-3.5 text-[#2F81F7]" />
+                Auto-fill module data
+                <span className="text-[11px] font-normal text-[#6E6E6E]">
+                  Optional
                 </span>
               </h4>
 
@@ -365,7 +366,7 @@ export function ScheduleManager() {
                     </div>
                     <div className="p-3 h-[160px] overflow-y-auto custom-scrollbar font-mono text-[11px] leading-relaxed flex flex-col gap-0.5">
                       {extractionLogs.length === 0 ? (
-                        <div className="text-[#4A4A4A]">$ initializing…</div>
+                        <div className="text-[#4A4A4A]">Waiting to start…</div>
                       ) : (
                         extractionLogs.map((log, i) => {
                           let colorClass = 'text-[#A1A1A1]';
@@ -400,14 +401,14 @@ export function ScheduleManager() {
                         {editForm.pdfFileName}
                       </span>
                     </div>
-                    <p className="text-[10px] text-[#6E6E6E] font-mono">// click or drop to replace</p>
+                    <p className="text-[10px] text-[#6E6E6E]">Click or drop a new file to replace</p>
                   </div>
                 ) : (
                   <div className="py-6 px-4 flex flex-col items-center gap-2">
                     <Upload className="w-4 h-4 text-[#6E6E6E]" />
-                    <p className="text-[11px] text-[#A1A1A1]">Drop PDF module here</p>
-                    <p className="text-[10px] text-[#6E6E6E] font-mono">
-                      // or click to browse
+                    <p className="text-[12px] text-[#EDEDED] font-medium">Drop PDF module here</p>
+                    <p className="text-[10px] text-[#6E6E6E]">
+                      or click to browse
                     </p>
                   </div>
                 )}
@@ -616,12 +617,12 @@ export function ScheduleManager() {
           <div className="flex flex-col">
             {store.schedules.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full py-10 px-6 text-center">
-                <div className="w-10 h-10 flex items-center justify-center border border-[#1F1F1F] mb-3">
+                <div className="w-10 h-10 flex items-center justify-center border border-[#1F1F1F] mb-4 rounded-sm">
                   <Calendar className="w-4 h-4 text-[#4A4A4A]" />
                 </div>
-                <p className="text-[11px] text-[#6E6E6E] font-mono">// no schedules yet</p>
-                <p className="text-[11px] text-[#4A4A4A] mt-1 font-mono">
-                  use ADD or PASTE TEXT to start
+                <p className="text-[12px] text-[#EDEDED] font-medium">No schedules yet</p>
+                <p className="text-[11px] text-[#6E6E6E] mt-1 max-w-[280px]">
+                  Add a practicum schedule manually, or paste raw text to import several at once.
                 </p>
               </div>
             ) : (

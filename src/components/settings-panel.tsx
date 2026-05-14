@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Check, Plus, X, Save, User, BookOpen, Database, Sparkles } from 'lucide-react';
-import { AIReportData, UserImage } from '@/lib/docxBuilder';
+import { AIReportData, UserImage } from '@/lib/types';
 import { ImageUploader } from './image-uploader';
 import { DropzoneRootProps, DropzoneInputProps } from 'react-dropzone';
 

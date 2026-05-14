@@ -1,8 +1,14 @@
-import katex from 'katex';
-import html2canvas from 'html2canvas-pro';
-
+/**
+ * Render a LaTeX string to a base-64 PNG via KaTeX + html2canvas.
+ *
+ * Both heavy deps (`katex`, `html2canvas-pro`) are loaded via dynamic
+ * imports so they split into their own chunks and never appear in the
+ * initial JS payload. This module is itself loaded lazily by
+ * `parser.ts`'s `preprocessMathToImages`, so the chain triggers only
+ * when text containing `$…$` flows through the docx builder.
+ */
 export async function getMathPng(latex: string, display: boolean): Promise<string> {
-  // Create an off-screen element
+  // Create an off-screen element.
   const container = document.createElement('div');
   Object.assign(container.style, {
     position: 'fixed',
@@ -10,33 +16,36 @@ export async function getMathPng(latex: string, display: boolean): Promise<strin
     left: '-9999px',
     zIndex: '-9999',
     backgroundColor: 'white',
-    color: 'black', // Memaksa text menjadi hitam agar tidak invisible di Dark Mode
-    padding: '2px', // FIX: Mengurangi padding dari 10px menjadi 2px agar tidak kegedean/banyak putih
+    color: 'black', // Force black so it's not invisible in dark-mode hosts.
+    padding: '2px',
     display: 'inline-block',
-    pointerEvents: 'none'
+    pointerEvents: 'none',
   });
-  
+
   try {
+    const [{ default: katex }, { default: html2canvas }] = await Promise.all([
+      import('katex'),
+      import('html2canvas-pro'),
+    ]);
+
     katex.render(latex, container, {
-        displayMode: display,
-        throwOnError: false,
-        output: 'html' // Ensure it's DOM-based so html2canvas can capture it
+      displayMode: display,
+      throwOnError: false,
+      output: 'html',
     });
-    
+
     document.body.appendChild(container);
-    
+
     const canvas = await html2canvas(container, {
-        backgroundColor: '#ffffff',
-        scale: 2, // for higher resolution
-        logging: false
+      backgroundColor: '#ffffff',
+      scale: 2,
+      logging: false,
     });
-    
+
     document.body.removeChild(container);
     return canvas.toDataURL('image/png');
   } catch (err) {
-    if (document.body.contains(container)) {
-        document.body.removeChild(container);
-    }
+    if (document.body.contains(container)) document.body.removeChild(container);
     console.error('KaTeX to Image failed:', err);
     throw err;
   }

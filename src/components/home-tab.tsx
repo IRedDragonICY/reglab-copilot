@@ -38,11 +38,11 @@ function PanelHeader({
     <header className="shrink-0 h-9 flex items-center justify-between px-3 border-b border-[#1F1F1F] bg-[#0A0A0A]">
       <div className="flex items-center gap-2 min-w-0">
         <div className="text-[#6E6E6E]">{icon}</div>
-        <h2 className="text-[10px] font-semibold tracking-[0.18em] uppercase text-[#EDEDED]">
+        <h2 className="text-[12px] font-semibold text-[#EDEDED]">
           {title}
         </h2>
         {meta && (
-          <span className="font-mono text-[10px] text-[#6E6E6E] pl-2 border-l border-[#1F1F1F] ml-1">
+          <span className="text-[11px] text-[#6E6E6E] pl-2 border-l border-[#1F1F1F] ml-1">
             {meta}
           </span>
         )}
@@ -270,11 +270,13 @@ export function HomeTab() {
             <div className="flex-1 overflow-y-auto">
               {sortedSessions.length === 0 ? (
                 <div className="h-full flex flex-col items-center justify-center p-8 text-center">
-                  <div className="w-10 h-10 flex items-center justify-center border border-[#1F1F1F] mb-3">
+                  <div className="w-10 h-10 flex items-center justify-center border border-[#1F1F1F] mb-4 rounded-sm">
                     <FileText className="w-4 h-4 text-[#4A4A4A]" />
                   </div>
-                  <p className="text-[11px] text-[#6E6E6E] font-mono">// no documents yet</p>
-                  <p className="text-[11px] text-[#4A4A4A] mt-1 font-mono">click NEW to start</p>
+                  <p className="text-[12px] text-[#EDEDED] font-medium">No reports yet</p>
+                  <p className="text-[11px] text-[#6E6E6E] mt-1">
+                    Click <span className="text-[#EDEDED]">New</span> to start your first report.
+                  </p>
                 </div>
               ) : (
                 <ul className="divide-y divide-[#1A1A1A]">
@@ -303,39 +305,31 @@ export function HomeTab() {
                           </button>
                         </div>
 
-                        <div className="mt-1 flex items-center gap-3 text-[10px] font-mono text-[#6E6E6E]">
+                        <div className="mt-1 flex items-center gap-3 text-[11px] text-[#6E6E6E]">
                           <span className="flex items-center gap-1">
                             <Clock className="w-2.5 h-2.5" />
                             {format(session.updatedAt, 'dd MMM yy, HH:mm')}
                           </span>
                           {session.metadata.pertemuan && (
                             <span className="flex items-center gap-1">
-                              <Hash className="w-2.5 h-2.5" />P{session.metadata.pertemuan}
+                              <Hash className="w-2.5 h-2.5" />
+                              Session {session.metadata.pertemuan}
                             </span>
                           )}
                         </div>
 
                         {(session.metadata.mataPraktikum || session.metadata.judulPertemuan) && (
-                          <div className="mt-1.5 grid grid-cols-[auto_1fr] gap-x-2 gap-y-0.5 text-[10px]">
+                          <div className="mt-1.5 flex flex-wrap items-center gap-x-2 text-[11px] text-[#A1A1A1]">
                             {session.metadata.mataPraktikum && (
-                              <>
-                                <span className="text-[#4A4A4A] font-mono uppercase tracking-wider">
-                                  subj
-                                </span>
-                                <span className="text-[#A1A1A1] truncate">
-                                  {session.metadata.mataPraktikum}
-                                </span>
-                              </>
+                              <span className="truncate">{session.metadata.mataPraktikum}</span>
+                            )}
+                            {session.metadata.mataPraktikum && session.metadata.judulPertemuan && (
+                              <span className="text-[#2A2A2A]">·</span>
                             )}
                             {session.metadata.judulPertemuan && (
-                              <>
-                                <span className="text-[#4A4A4A] font-mono uppercase tracking-wider">
-                                  topic
-                                </span>
-                                <span className="text-[#A1A1A1] truncate">
-                                  {session.metadata.judulPertemuan}
-                                </span>
-                              </>
+                              <span className="truncate text-[#6E6E6E]">
+                                {session.metadata.judulPertemuan}
+                              </span>
                             )}
                           </div>
                         )}

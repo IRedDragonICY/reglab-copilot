@@ -1,33 +1,12 @@
-export interface ReportMetadata {
-  reportType?: 'praktikum' | 'kuliah';
-  mataPraktikum: string;
-  judulPertemuan: string;
-  hariTanggalSesi: string;
-  nama: string;
-  nim: string;
-  laboratorium?: string;
-  dosen?: string;
-  pertemuan?: number;
-}
-
-export interface AIReportData {
-  pendahuluan?: string;
-  preTestAnswers: { q: string; a: string }[];
-  postTestAnswers: { q: string; a: string }[];
-  stepByStepNarrative: string;
-  codeAnalysis: string;
-  alatDanBahan?: string[];
-  cellAnalyses?: {
-    cellIndex?: number;
-    imageIndex?: number;
-    section: 'implementasi' | 'post_test';
-    caption: string;
-    explanation: string;
-    tableCaption?: string;
-  }[];
-}
-
-export interface UserImage {
-  id: string;
-  dataUrl: string;
-}
+// This module is a thin re-export so `@/lib/docx/*` internals can write
+// `import type { ReportMetadata } from './types'` without reaching back
+// across the barrel. The canonical definitions live in `@/lib/types`.
+export type {
+  ReportMetadata,
+  AIReportData,
+  UserImage,
+  CellAnalysis,
+  QAPair,
+  ReportType,
+  SessionMetadata,
+} from '@/lib/types';

@@ -1,9 +1,17 @@
 import React, { useCallback, useEffect, useState, useRef } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { UserImage } from '@/lib/docxBuilder';
+import { UserImage } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { X, FileText, Loader2 } from 'lucide-react';
-import { renderPageAsImage, getDocumentProxy } from 'unpdf';
+
+// `unpdf` is loaded lazily — only when a user actually drops a PDF —
+// so the heavy pdf.js dependency never appears in the initial chunk.
+type UnpdfModule = typeof import('unpdf');
+let unpdfPromise: Promise<UnpdfModule> | null = null;
+const loadUnpdf = (): Promise<UnpdfModule> => {
+  if (!unpdfPromise) unpdfPromise = import('unpdf');
+  return unpdfPromise;
+};
 
 interface ImageUploaderProps {
   images: UserImage[];
@@ -26,11 +34,11 @@ export function ImageUploader({ images, onChange, label }: ImageUploaderProps) {
         bytes[i] = binaryString.charCodeAt(i);
       }
 
-      const pdf = await getDocumentProxy(bytes);
+      const pdf = await (await loadUnpdf()).getDocumentProxy(bytes);
       const results: string[] = [];
       
       for (let i = 1; i <= pdf.numPages; i++) {
-        const thumb = await renderPageAsImage(pdf, i, {
+        const thumb = await (await loadUnpdf()).renderPageAsImage(pdf, i, {
           scale: 2.0,
           toDataURL: true,
         });
@@ -49,11 +57,11 @@ export function ImageUploader({ images, onChange, label }: ImageUploaderProps) {
        try {
          const arrayBuffer = await file.arrayBuffer();
          const uint8Array = new Uint8Array(arrayBuffer);
-         const pdf = await getDocumentProxy(uint8Array);
+         const pdf = await (await loadUnpdf()).getDocumentProxy(uint8Array);
          const results: string[] = [];
          
          for (let i = 1; i <= pdf.numPages; i++) {
-           const thumb = await renderPageAsImage(pdf, i, {
+           const thumb = await (await loadUnpdf()).renderPageAsImage(pdf, i, {
               scale: 2.0,
               toDataURL: true,
            });
