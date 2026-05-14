@@ -21,7 +21,8 @@ import { preprocessMathToImages } from '../parser';
  *  - `#` heading levels (1–6) with decreasing size
  *  - `- ` bullet lines (rendered as `• `-prefixed paragraphs with indent)
  *  - `1. ` numbered lines (indented; numbering preserved inline)
- *  - `**bold**` and `*italic*` inline spans
+ *  - `**bold**` and `*italic*` inline spans (may surround images and
+ *    other styled spans — see `tokenizeInline`)
  *  - `![alt](url)` images — data URLs decoded inline, external URLs
  *    fetched (codecogs.com routed via AllOrigins for CORS)
  *  - Triple-backtick fenced code blocks → bordered shaded code tables
@@ -97,12 +98,7 @@ export async function parseMarkdownToParagraphs(
       indent = 360;
     }
 
-    // Ensure an image span isn't eaten by bold/italic regex.
-    textToParse = textToParse.replace(/\*\*(!\[[^\]]*\]\s*\([^)]+\))\*\*/g, '$1');
-    textToParse = textToParse.replace(/\*(!\[[^\]]*\]\s*\([^)]+\))\*/g, '$1');
-
-    // Split so image spans get priority over bold/italic.
-    const parts = textToParse.split(/(!\[[^\]]*\]\s*\([^)]+\)|\*\*.*?\*\*|\*.*?\*)/g);
+    const tokens = tokenizeInline(textToParse);
     const textRuns: (TextRun | ImageRun)[] = [];
 
     if (isFirstLine && options?.prefix) {
@@ -117,86 +113,24 @@ export async function parseMarkdownToParagraphs(
       isFirstLine = false;
     }
 
-    for (const part of parts) {
-      if (!part) continue;
-
-      if (part.startsWith('![') && /\]\s*\(/.test(part)) {
-        const urlMatch = part.match(/\]\s*\(([^)]+)\)/);
-        if (urlMatch) {
-          const url = urlMatch[1];
-          try {
-            const run = await toImageRun(url, {
-              maxWidth: MAX_IMG_WIDTH,
-              halfScale: true,
-              minSize: { width: 100, height: 16 },
-              measureFallback: { width: 0, height: 0 },
-            });
-            if (run) {
-              textRuns.push(run);
-            } else if (url.startsWith('data:image/')) {
-              // Data-URL decode failure — preserve the legacy error placeholder.
-              textRuns.push(
-                new TextRun({
-                  text: sanitizeText('[Image/Math Render Error]'),
-                  size: headingSize,
-                  font: FONT_CALIBRI,
-                  color: PALETTE.errorText,
-                  bold: isHeadingBold,
-                }),
-              );
-            }
-            // External URL fetch failure is silently skipped (pre-refactor behavior).
-          } catch (e) {
-            console.error('Base64/Image render error:', e);
-            textRuns.push(
-              new TextRun({
-                text: sanitizeText('[Image/Math Render Error]'),
-                size: headingSize,
-                font: FONT_CALIBRI,
-                color: PALETTE.errorText,
-                bold: isHeadingBold,
-              }),
-            );
-          }
-        } else {
-          textRuns.push(
-            new TextRun({
-              text: sanitizeText(part),
-              size: headingSize,
-              font: FONT_CALIBRI,
-              bold: isHeadingBold,
-            }),
-          );
-        }
-      } else if (part.startsWith('**') && part.endsWith('**')) {
-        textRuns.push(
-          new TextRun({
-            text: sanitizeText(part.slice(2, -2)),
-            bold: true,
-            size: headingSize,
-            font: FONT_CALIBRI,
-          }),
-        );
-      } else if (part.startsWith('*') && part.endsWith('*')) {
-        textRuns.push(
-          new TextRun({
-            text: sanitizeText(part.slice(1, -1)),
-            italics: true,
-            size: headingSize,
-            font: FONT_CALIBRI,
-            bold: isHeadingBold,
-          }),
-        );
-      } else {
-        textRuns.push(
-          new TextRun({
-            text: sanitizeText(part),
-            size: headingSize,
-            font: FONT_CALIBRI,
-            bold: isHeadingBold,
-          }),
-        );
+    for (const token of tokens) {
+      if (token.kind === 'image') {
+        const run = await renderImageToken(token.url, headingSize, isHeadingBold);
+        if (run) textRuns.push(run);
+        continue;
       }
+
+      if (!token.text) continue;
+
+      textRuns.push(
+        new TextRun({
+          text: sanitizeText(token.text),
+          bold: token.bold || isHeadingBold,
+          italics: token.italic,
+          size: headingSize,
+          font: FONT_CALIBRI,
+        }),
+      );
     }
 
     elements.push(
@@ -216,4 +150,265 @@ export async function parseMarkdownToParagraphs(
   }
 
   return elements;
+}
+
+/**
+ * A single inline token produced by `tokenizeInline`.
+ *  - `text` carries plain or styled text (bold/italic flags resolved).
+ *  - `image` carries an image URL with no surrounding style — the docx
+ *    `ImageRun` itself doesn't have a "bold" attribute, so any wrapping
+ *    style is dropped on images (just like in HTML/CSS).
+ */
+export type InlineToken =
+  | { kind: 'text'; text: string; bold: boolean; italic: boolean }
+  | { kind: 'image'; url: string; alt: string };
+
+/**
+ * Split an inline markdown line into ordered tokens.
+ *
+ * Algorithm (in order, important):
+ *  1. Extract every `![alt](url)` image into an indexed placeholder so
+ *     base64 payloads, parens in URLs, and `*` chars inside data URLs
+ *     can never be misread as italic delimiters. This is the bug fix
+ *     for italic-wrapped lines that contain inline math images: the
+ *     old flat split treated the leading `*` of the bullet/sentence as
+ *     an italic open and let `*…*` swallow the entire `![…](data:…)`,
+ *     leaking the base64 string as plain text into the DOCX.
+ *  2. Tokenize the placeholder-bearing string for `**bold**` and
+ *     `*italic*` spans using a simple linear scanner. We do not allow
+ *     the same delimiter to nest inside itself, but we *do* allow
+ *     italics to appear inside a bold run and vice-versa.
+ *  3. Expand placeholders back into image tokens, preserving the order
+ *     of text and image runs as they appeared in the source.
+ *
+ * Defensive choices:
+ *  - Unmatched `*` or `**` are emitted as literal characters.
+ *  - Empty styled spans (`**` with nothing between) are dropped.
+ *  - Whitespace inside data URLs is collapsed by the caller before we
+ *    see it (see `cleanText` in `parseMarkdownToParagraphs`).
+ */
+export function tokenizeInline(input: string): InlineToken[] {
+  // ---- 1. Extract images into placeholders --------------------------------
+  // Sentinels use a byte that can't appear in normal text or markdown.
+  const SENTINEL = '\u0001';
+  const images: { url: string; alt: string }[] = [];
+  const placeheld = input.replace(
+    /!\[([^\]]*)\]\(([^)]+)\)/g,
+    (_match, alt: string, url: string) => {
+      const idx = images.length;
+      images.push({ alt, url });
+      return `${SENTINEL}IMG${idx}${SENTINEL}`;
+    },
+  );
+
+  // ---- 2. Tokenize bold/italic on the placeheld string --------------------
+  type StyledRun = { text: string; bold: boolean; italic: boolean };
+  const styledRuns: StyledRun[] = [];
+
+  let i = 0;
+  let buffer = '';
+  let bold = false;
+  let italic = false;
+
+  const flushBuffer = () => {
+    if (buffer.length === 0) return;
+    styledRuns.push({ text: buffer, bold, italic });
+    buffer = '';
+  };
+
+  while (i < placeheld.length) {
+    const ch = placeheld[i];
+
+    if (ch === '*') {
+      const isDouble = placeheld[i + 1] === '*';
+      const delim = isDouble ? '**' : '*';
+      const closeAt = findClosingDelim(placeheld, i + delim.length, delim);
+
+      if (closeAt === -1) {
+        // No matching close — emit the asterisk(s) as literal text.
+        buffer += delim;
+        i += delim.length;
+        continue;
+      }
+
+      // Real delimiter pair: flush the prefix, toggle the style, and
+      // continue scanning the inner span. A nested same-delimiter is
+      // disallowed by `findClosingDelim`'s lookahead, so this is safe.
+      flushBuffer();
+      if (isDouble) bold = true; else italic = true;
+      i += delim.length;
+
+      // Recurse over the inner span with current style flags applied.
+      const inner = placeheld.slice(i, closeAt);
+      const innerTokens = tokenizeStyledSpan(inner, bold, italic);
+      styledRuns.push(...innerTokens);
+
+      if (isDouble) bold = false; else italic = false;
+      i = closeAt + delim.length;
+      continue;
+    }
+
+    buffer += ch;
+    i += 1;
+  }
+  flushBuffer();
+
+  // ---- 3. Expand placeholders back to image / text tokens -----------------
+  const out: InlineToken[] = [];
+  const placeholderRe = new RegExp(`${SENTINEL}IMG(\\d+)${SENTINEL}`, 'g');
+
+  for (const run of styledRuns) {
+    let lastIndex = 0;
+    placeholderRe.lastIndex = 0;
+    let match: RegExpExecArray | null;
+    while ((match = placeholderRe.exec(run.text)) !== null) {
+      if (match.index > lastIndex) {
+        out.push({
+          kind: 'text',
+          text: run.text.slice(lastIndex, match.index),
+          bold: run.bold,
+          italic: run.italic,
+        });
+      }
+      const imgIdx = Number(match[1]);
+      const img = images[imgIdx];
+      if (img) out.push({ kind: 'image', url: img.url, alt: img.alt });
+      lastIndex = match.index + match[0].length;
+    }
+    if (lastIndex < run.text.length) {
+      out.push({
+        kind: 'text',
+        text: run.text.slice(lastIndex),
+        bold: run.bold,
+        italic: run.italic,
+      });
+    }
+  }
+
+  return out;
+}
+
+/**
+ * Find the next occurrence of `delim` in `s` starting at `from`, but
+ * skip occurrences that are part of a longer delimiter run. For
+ * `delim === '*'` we must not match a `**` close, and for `**` we must
+ * not match a single `*`. Returns -1 if not found.
+ */
+function findClosingDelim(s: string, from: number, delim: '*' | '**'): number {
+  let i = from;
+  while (i < s.length) {
+    if (s[i] !== '*') { i += 1; continue; }
+
+    if (delim === '*') {
+      // A single '*' close requires the previous char not to be '*' and
+      // the next char not to be '*'.
+      const prev = s[i - 1];
+      const next = s[i + 1];
+      if (prev !== '*' && next !== '*') return i;
+      // Skip the whole run of asterisks.
+      while (i < s.length && s[i] === '*') i += 1;
+      continue;
+    }
+
+    // delim === '**': need exactly two consecutive '*'.
+    if (s[i + 1] === '*') {
+      // Make sure it's not the start of '***' (treat as no-match here).
+      const after = s[i + 2];
+      if (after !== '*') return i;
+      while (i < s.length && s[i] === '*') i += 1;
+      continue;
+    }
+    i += 1;
+  }
+  return -1;
+}
+
+/**
+ * Tokenize a styled inner span. Reuses the same scanner so nested
+ * `*italic*` inside `**bold**` (and vice-versa) is supported, but we
+ * carry forward the parent's bold/italic flags so the resulting runs
+ * inherit the wrapping style.
+ */
+function tokenizeStyledSpan(
+  span: string,
+  parentBold: boolean,
+  parentItalic: boolean,
+): { text: string; bold: boolean; italic: boolean }[] {
+  const out: { text: string; bold: boolean; italic: boolean }[] = [];
+  let i = 0;
+  let buffer = '';
+  let bold = parentBold;
+  let italic = parentItalic;
+
+  const flush = () => {
+    if (!buffer) return;
+    out.push({ text: buffer, bold, italic });
+    buffer = '';
+  };
+
+  while (i < span.length) {
+    const ch = span[i];
+    if (ch === '*') {
+      const isDouble = span[i + 1] === '*';
+      const delim = isDouble ? '**' : '*';
+      const closeAt = findClosingDelim(span, i + delim.length, delim);
+      if (closeAt === -1) {
+        buffer += delim;
+        i += delim.length;
+        continue;
+      }
+      flush();
+      if (isDouble) bold = true; else italic = true;
+      const inner = span.slice(i + delim.length, closeAt);
+      out.push(...tokenizeStyledSpan(inner, bold, italic));
+      if (isDouble) bold = parentBold; else italic = parentItalic;
+      i = closeAt + delim.length;
+      continue;
+    }
+    buffer += ch;
+    i += 1;
+  }
+  flush();
+  return out;
+}
+
+/**
+ * Render a single image URL extracted from inline markdown. Returns an
+ * `ImageRun` on success, a red `[Image/Math Render Error]` `TextRun` for
+ * decode failures on data URLs, or `null` for silent external-URL fetch
+ * failures (matches pre-refactor behavior).
+ */
+async function renderImageToken(
+  url: string,
+  headingSize: number,
+  isHeadingBold: boolean,
+): Promise<TextRun | ImageRun | null> {
+  try {
+    const run = await toImageRun(url, {
+      maxWidth: MAX_IMG_WIDTH,
+      halfScale: true,
+      minSize: { width: 100, height: 16 },
+      measureFallback: { width: 0, height: 0 },
+    });
+    if (run) return run;
+    if (url.startsWith('data:image/')) {
+      return new TextRun({
+        text: sanitizeText('[Image/Math Render Error]'),
+        size: headingSize,
+        font: FONT_CALIBRI,
+        color: PALETTE.errorText,
+        bold: isHeadingBold,
+      });
+    }
+    return null;
+  } catch (e) {
+    console.error('Base64/Image render error:', e);
+    return new TextRun({
+      text: sanitizeText('[Image/Math Render Error]'),
+      size: headingSize,
+      font: FONT_CALIBRI,
+      color: PALETTE.errorText,
+      bold: isHeadingBold,
+    });
+  }
 }
