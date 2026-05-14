@@ -26,7 +26,7 @@ import type { ReportMetadata, AIReportData, UserImage } from '@/lib/types';
 import { CM_TO_TWIP } from './constants';
 import { sanitizeText } from './text';
 import { parseMarkdownToParagraphs } from './markdown';
-import { createImagesParagraphs, renderNotebookCells } from './notebook';
+import { createImagesParagraphs, renderNotebookCells, findUnanalyzedImages, renderOrphanImages } from './notebook';
 
 // Re-export so existing consumers of `@/lib/docxBuilder` keep working.
 // Canonical definitions live in `@/lib/types` and the helpers in `./docx/*`.
@@ -424,8 +424,15 @@ export async function generateDocx(
   
   const unusedImplImages = implImages.filter((_, idx) => !usedImplImages.has(idx));
   if (unusedImplImages.length > 0) {
-    const implImgParagraphs = await createImagesParagraphs(unusedImplImages, 'Implementasi', 'II', implImageIndex);
-    bodyChildren.push(...implImgParagraphs);
+    const orphans = findUnanalyzedImages(
+      implImages,
+      cellAnalysesArray,
+      'implementasi',
+      'Implementasi',
+    );
+    const rendered = await renderOrphanImages(implImages, orphans, 'II', implImageIndex);
+    bodyChildren.push(...rendered.paragraphs);
+    implImageIndex = rendered.nextImgIdx;
   }
 
   if (!isKuliah) {
@@ -561,8 +568,15 @@ export async function generateDocx(
           spacing: { before: 200, after: 100 },
         })
       );
-      const postTestImgParagraphs = await createImagesParagraphs(unusedPostTestImages, 'Lembar Jawaban Post-Test', 'III', postTestImageIndex);
-      bodyChildren.push(...postTestImgParagraphs);
+      const orphans = findUnanalyzedImages(
+        postTestImages,
+        cellAnalysesArray,
+        'post_test',
+        'Lembar Jawaban Post-Test',
+      );
+      const rendered = await renderOrphanImages(postTestImages, orphans, 'III', postTestImageIndex);
+      bodyChildren.push(...rendered.paragraphs);
+      postTestImageIndex = rendered.nextImgIdx;
     }
   }
 

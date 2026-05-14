@@ -9,7 +9,7 @@ import {
   WidthType,
 } from 'docx';
 import type { AIReportData, UserImage, CellAnalysis } from '@/lib/types';
-import { FONT_CALIBRI, FONT_MONO, MAX_IMG_WIDTH } from './constants';
+import { FONT_CALIBRI, FONT_MONO, MAX_IMG_WIDTH, PALETTE } from './constants';
 import { sanitizeText } from './text';
 import { toImageRun } from './image';
 import { codeLines as buildCodeLines } from './code';
@@ -283,4 +283,144 @@ export async function renderNotebookCells(
   }
 
   return { paragraphs: children, nextCodeIdx: codeIdx, nextImgIdx: imgIdx };
+}
+
+
+/**
+ * Diagnostic produced by `findUnanalyzedImages` for any uploaded image
+ * that the AI failed to map to a `cellAnalyses` entry. The builder uses
+ * the `index` (0-based position in the original `images` array) to pull
+ * the image data, the `caption` for the figure label, and the `warning`
+ * to render a visible "Penjelasan Belum Tersedia" notice so the user
+ * sees the gap and can fix it via the chat editor instead of shipping a
+ * silent caption-only figure.
+ *
+ * Visibility of the warning is intentional: the previous behaviour
+ * silently dumped orphans with the bucket-level caption ("Lembar Jawaban
+ * Post-Test") and zero analysis text, which produced exactly the
+ * "screenshot tanpa penjelasan" issue the user reported.
+ */
+export interface UnanalyzedImage {
+  index: number;
+  caption: string;
+  warning: string;
+}
+
+/**
+ * Identify uploaded images that have no `cellAnalyses` entry pointing
+ * to them. Pure function — no DOCX dependency, suitable for unit tests.
+ *
+ * The check is keyed on `imageIndex` matching the position in `images`
+ * and on `section` matching the bucket the image was uploaded into. An
+ * AI-produced entry without `imageIndex` cannot be matched and so does
+ * not "claim" any image — the caller treats every image without a
+ * matching entry as orphaned.
+ *
+ * `bucketCaption` is the generic figure label used when no analysis is
+ * available (e.g. "Lembar Jawaban Post-Test"). It is preserved verbatim
+ * in `UnanalyzedImage.caption` so the rendered figure number reads the
+ * same as it did before — only the inline warning is new.
+ */
+export function findUnanalyzedImages(
+  images: UserImage[],
+  cellAnalyses: CellAnalysis[] | undefined,
+  section: 'implementasi' | 'post_test',
+  bucketCaption: string,
+): UnanalyzedImage[] {
+  const claimedIndexes = new Set<number>();
+  if (cellAnalyses) {
+    for (const a of cellAnalyses) {
+      if (a.section === section && typeof a.imageIndex === 'number') {
+        claimedIndexes.add(a.imageIndex);
+      }
+    }
+  }
+
+  const orphans: UnanalyzedImage[] = [];
+  for (let i = 0; i < images.length; i++) {
+    const img = images[i];
+    if (!img || !img.dataUrl) continue;
+    if (img.dataUrl.startsWith('data:application/pdf')) continue;
+    if (claimedIndexes.has(i)) continue;
+
+    const sectionLabel = section === 'post_test' ? 'Post-Test' : 'Implementasi';
+    orphans.push({
+      index: i,
+      caption: bucketCaption,
+      warning:
+        `Penjelasan untuk gambar ${sectionLabel} ini belum tersedia dari hasil analisis AI. ` +
+        `Silakan minta Copilot untuk meninjau ulang screenshot ini, atau tambahkan penjelasan ` +
+        `secara manual pada panel preview sebelum mengekspor laporan.`,
+    });
+  }
+  return orphans;
+}
+
+/**
+ * Render a list of orphaned images. For each one: image → numbered figure
+ * caption → red-italic warning paragraph. Returns the next image index
+ * so the caller can continue the per-chapter "Gambar X.Y" sequence.
+ *
+ * Mirrors the visual structure of `createImagesParagraphs` so the figure
+ * renders identically in the document; the only difference is the trailing
+ * warning paragraph that flags the missing analysis.
+ */
+export async function renderOrphanImages(
+  images: UserImage[],
+  orphans: UnanalyzedImage[],
+  bab: string,
+  startIndex: number,
+): Promise<{ paragraphs: Paragraph[]; nextImgIdx: number }> {
+  const paragraphs: Paragraph[] = [];
+  let index = startIndex;
+
+  for (const orphan of orphans) {
+    const img = images[orphan.index];
+    if (!img || !img.dataUrl) continue;
+
+    try {
+      const run = await toImageRun(img.dataUrl, {
+        maxWidth: MAX_IMG_WIDTH,
+        measureFallback: { width: 400, height: 300 },
+      });
+      if (!run) continue;
+
+      paragraphs.push(
+        new Paragraph({
+          alignment: AlignmentType.CENTER,
+          children: [run],
+        }),
+        new Paragraph({
+          heading: HeadingLevel.HEADING_4,
+          alignment: AlignmentType.CENTER,
+          children: [
+            new TextRun({
+              text: `Gambar ${bab}.${index} ${orphan.caption}`,
+              size: 22,
+              font: FONT_CALIBRI,
+            }),
+          ],
+          spacing: { before: 100, after: 100 },
+        }),
+        new Paragraph({
+          alignment: AlignmentType.JUSTIFIED,
+          children: [
+            new TextRun({
+              text: sanitizeText(orphan.warning),
+              size: 22,
+              font: FONT_CALIBRI,
+              italics: true,
+              color: PALETTE.errorText,
+            }),
+          ],
+          spacing: { after: 300 },
+        }),
+      );
+      index++;
+    } catch (e) {
+      console.error('Failed to render orphan image', e);
+    }
+  }
+
+  return { paragraphs, nextImgIdx: index };
 }

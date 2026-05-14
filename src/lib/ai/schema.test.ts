@@ -93,11 +93,11 @@ describe('AI function declarations — byte stability', () => {
                         "type": "NUMBER"
                       },
                       "explanation": {
-                        "description": "Deskripsi panjang/analisis baris kode. JIKA sel menghasilkan output berupa gambar/grafik/tabel (Visual Output), Anda WAJIB menjabarkan deskripsi, bacaan data (angka/tren), dan interpretasi detail dari gambar grafik tersebut di sini! Jangan hanya sekadar caption.",
+                        "description": "Penjelasan natural berbahasa Indonesia (kalimat pasif, gaya laporan mahasiswa) untuk setiap screenshot/sel. WAJIB minimal 2 kalimat dan menyebut detail konkret yang TERLIHAT di gambar: file/tab editor aktif, nomor baris yang ter-highlight, identifier kode (fungsi/variabel/selector D3/properti CSS), output UI yang dihasilkan (warna, urutan, nilai dropdown), dan perubahan dari step sebelumnya. DILARANG menggunakan pembuka generic seperti \\"Pada gambar di atas...\\", \\"Seperti yang terlihat...\\", \\"Berdasarkan tampilan...\\", \\"Gambar di atas menunjukkan...\\". Langsung sebut observasi konkret.",
                         "type": "STRING"
                       },
                       "imageIndex": {
-                        "description": "Index gambar lampiran (0-based) dari daftar yang diberikan. Pilih index gambar yang sesuai dengan langkah praktikum yang sedang Anda analisis. AI harus menentukan urutan logis, bukan sekadar mengikuti urutan index.",
+                        "description": "Index gambar lampiran (0-based) dari daftar yang diberikan. WAJIB diisi untuk setiap screenshot implementasi atau post_test agar gambar terhubung ke entri ini. Tanpa imageIndex, gambar akan muncul tanpa penjelasan di laporan.",
                         "type": "NUMBER"
                       },
                       "notebookIndex": {
