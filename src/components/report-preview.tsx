@@ -1,10 +1,12 @@
 import React from 'react';
+import { useEffect, useRef } from 'react';
 import { ReportMetadata, AIReportData, UserImage } from '@/lib/types';
 import { ParsedNotebook, categorizeNotebookCells } from '@/lib/parser';
 import ReactMarkdown from 'react-markdown';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import 'katex/dist/katex.min.css';
+import { useAppStore } from '@/lib/store';
 
 const pythonKeywords = new Set(['def', 'class', 'import', 'from', 'as', 'return', 'if', 'elif', 'else', 'while', 'for', 'in', 'try', 'except', 'finally', 'pass', 'break', 'continue', 'with', 'yield', 'True', 'False', 'None', 'and', 'or', 'not']);
 const pythonBuiltins = new Set(['print', 'len', 'int', 'str', 'float', 'list', 'dict', 'set', 'tuple', 'open', 'range']);
@@ -149,6 +151,48 @@ function ReportPreviewInner({
   modulContext = '', postTest = '', onAiDataChange
 }: ReportPreviewProps) {
   
+  // Selection-aware editing: when the user releases the mouse over a
+  // selected portion of the preview, capture the highlighted text and
+  // stash it on the store. The Copilot composer reads the slice and
+  // surfaces it as a context chip; sending the next message scopes the
+  // edit to that text. Cleared on collapsed selection or on click
+  // outside.
+  const previewRef = useRef<HTMLDivElement | null>(null);
+  const setSelectionContext = useAppStore((s) => s.setSelectionContext);
+  useEffect(() => {
+    const root = previewRef.current;
+    if (!root) return;
+    const onUp = () => {
+      const sel = window.getSelection();
+      if (!sel || sel.isCollapsed) return;
+      const text = sel.toString().trim();
+      if (!text || text.length < 4) return;
+      // Only capture selections that originate inside the preview.
+      const anchor = sel.anchorNode;
+      if (!anchor || !root.contains(anchor.nodeType === 1 ? (anchor as Element) : anchor.parentElement)) {
+        return;
+      }
+      // Walk up to find a section header (h1/h2 with id) so the chip
+      // can show "B. Langkah Kerja → …" instead of just the raw text.
+      let field: string | undefined;
+      let cursor: Node | null = anchor;
+      while (cursor && cursor !== root) {
+        const el = cursor.nodeType === 1 ? (cursor as Element) : cursor.parentElement;
+        if (!el) break;
+        // Look for the nearest preceding heading sibling chain.
+        const heading = el.closest('[id]');
+        if (heading && heading instanceof HTMLElement && heading.tagName.match(/^H[1-3]$/)) {
+          field = heading.innerText.trim();
+          break;
+        }
+        cursor = el.parentElement;
+      }
+      setSelectionContext({ text, field });
+    };
+    root.addEventListener('mouseup', onUp);
+    return () => root.removeEventListener('mouseup', onUp);
+  }, [setSelectionContext]);
+
   const cellAnalysesArray = aiData.cellAnalyses || (aiData as any).praktikum?.cellAnalyses || (aiData as any).kuliah?.cellAnalyses;
   const preTestAnswersArray = aiData.preTestAnswers || ((aiData as any).pre_test?.questions ||[]).map((q: string, i: number) => ({ q, a: (aiData as any).pre_test?.answers?.[i] || '' }));
   const postTestAnswersArray = aiData.postTestAnswers || ((aiData as any).post_test?.questions ||[]).map((q: string, i: number) => ({ q, a: (aiData as any).post_test?.answers?.[i] || '' }));
@@ -347,7 +391,7 @@ function ReportPreviewInner({
   const allCodeMocks = Array.from({ length: nextCodeIdxII - 1 }).map((_, i) => `Kode Program II.${i + 1} Blok Kode`);
 
   return (
-    <div className="w-full flex flex-col items-center gap-8 py-8 font-sans text-black text-justify leading-relaxed outline-none">
+    <div ref={previewRef} className="w-full flex flex-col items-center gap-8 py-8 font-sans text-black text-justify leading-relaxed outline-none">
       
       {/* 1. Cover Page */}
       <PreviewPage isCover>

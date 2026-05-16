@@ -30,23 +30,16 @@ function MenuItem({ label, onClick }: { label: string; onClick?: () => void }) {
 
 export default function AppMain() {
   const store = useAppStore();
-  const [mounted, setMounted] = useState(false);
   const [fileMenuOpen, setFileMenuOpen] = useState(false);
   const fileBtnRef = useRef<HTMLDivElement>(null);
   const { setTheme } = useTheme();
 
   useEffect(() => {
-    setMounted(true);
     setTheme('dark');
   }, [setTheme]);
 
-  if (!mounted) {
-    return (
-      <div className="flex items-center justify-center h-screen bg-[#0A0A0A] text-[#6E6E6E] text-[13px]">
-        <span>Loading Reglab Copilot…</span>
-      </div>
-    );
-  }
+  // The hydration gate now lives in <App />; if we're rendering, the
+  // store is hydrated and it's safe to read every slice.
 
   const activeSession = store.sessions.find((s) => s.id === store.activeTab);
   const activeSessionTitle =

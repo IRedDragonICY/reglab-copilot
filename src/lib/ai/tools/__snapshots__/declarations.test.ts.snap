@@ -1,0 +1,398 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`ALL_GRANULAR_DECLARATIONS — byte stability > matches the locked snapshot of all 15 declarations 1`] = `
+"[
+  {
+    "description": "Append a single CellAnalysis entry to the report. Use this when adding one new screenshot or notebook-cell explanation. Prefer this over generate_report when the user is iteratively building up a report; it produces a smaller, traceable change.",
+    "name": "add_cell_analysis",
+    "parameters": {
+      "properties": {
+        "entry": {
+          "properties": {
+            "caption": {
+              "description": "Caption dinamis & spesifik untuk judul potongan kode. CONTOH: \\"Import Library Pandas\\", \\"Proses Cleansing Data Missing Value\\". DILARANG KERAS menggunakan kata generic/template seperti \\"Implementasi Kode\\"!",
+              "type": "STRING"
+            },
+            "cellIndex": {
+              "description": "Index sel notebook di dalam file tersebut",
+              "type": "NUMBER"
+            },
+            "explanation": {
+              "description": "Penjelasan natural berbahasa Indonesia (kalimat pasif, gaya laporan mahasiswa) untuk setiap screenshot/sel. WAJIB minimal 2 kalimat dan menyebut detail konkret yang TERLIHAT di gambar: file/tab editor aktif, nomor baris yang ter-highlight, identifier kode (fungsi/variabel/selector D3/properti CSS), output UI yang dihasilkan (warna, urutan, nilai dropdown), dan perubahan dari step sebelumnya. DILARANG menggunakan pembuka generic seperti \\"Pada gambar di atas...\\", \\"Seperti yang terlihat...\\", \\"Berdasarkan tampilan...\\", \\"Gambar di atas menunjukkan...\\". Langsung sebut observasi konkret.",
+              "type": "STRING"
+            },
+            "imageIndex": {
+              "description": "Index gambar lampiran (0-based) dari daftar yang diberikan. WAJIB diisi untuk setiap screenshot implementasi atau post_test agar gambar terhubung ke entri ini. Tanpa imageIndex, gambar akan muncul tanpa penjelasan di laporan.",
+              "type": "NUMBER"
+            },
+            "notebookIndex": {
+              "description": "Index file notebook (0-based) jika terdapat lebih dari satu notebook yang diupload.",
+              "type": "NUMBER"
+            },
+            "section": {
+              "description": "Wajib diisi 'implementasi' or 'post_test'. Penting! Nilainya harus persis salah satu dari list ini.",
+              "type": "STRING"
+            },
+            "tableCaption": {
+              "description": "Caption dinamis khusus untuk output visual (tabel DataFrame/Grafik/Plot). CONTOH: \\"Tabel Distribusi Kategori Produk\\", \\"Grafik Elbow Method\\". DILARANG KERAS menggunakan kata generic seperti \\"Tabel/Output DataFrame\\"!",
+              "type": "STRING"
+            }
+          },
+          "required": [
+            "explanation",
+            "caption",
+            "section"
+          ],
+          "type": "OBJECT"
+        }
+      },
+      "required": [
+        "entry"
+      ],
+      "type": "OBJECT"
+    }
+  },
+  {
+    "description": "Update fields of an existing CellAnalysis entry. The matcher selects by (notebookIndex, cellIndex, imageIndex, section); undefined fields in the matcher act as wildcards. The patch contains only the fields to change.",
+    "name": "update_cell_analysis",
+    "parameters": {
+      "properties": {
+        "matcher": {
+          "description": "Selects an existing CellAnalysis entry. notebookIndex / cellIndex / imageIndex act as wildcards when omitted; the first matching entry in document order is targeted.",
+          "properties": {
+            "cellIndex": {
+              "description": "Index sel notebook. Omit to wildcard.",
+              "type": "NUMBER"
+            },
+            "imageIndex": {
+              "description": "Index gambar lampiran (0-based). Omit to wildcard.",
+              "type": "NUMBER"
+            },
+            "notebookIndex": {
+              "description": "Index file notebook (0-based). Omit to wildcard.",
+              "type": "NUMBER"
+            },
+            "section": {
+              "description": "Salah satu dari 'implementasi' atau 'post_test'. Wajib diisi.",
+              "type": "STRING"
+            }
+          },
+          "required": [
+            "section"
+          ],
+          "type": "OBJECT"
+        },
+        "patch": {
+          "description": "Subset of CellAnalysis fields to overwrite on the matched entry. Omit fields you do not want to change.",
+          "properties": {
+            "caption": {
+              "description": "Caption dinamis & spesifik untuk judul potongan kode. DILARANG KERAS menggunakan kata generic/template seperti \\"Implementasi Kode\\"!",
+              "type": "STRING"
+            },
+            "cellIndex": {
+              "description": "Index sel notebook di dalam file tersebut",
+              "type": "NUMBER"
+            },
+            "explanation": {
+              "description": "Penjelasan natural berbahasa Indonesia (kalimat pasif, gaya laporan mahasiswa) untuk setiap screenshot/sel. Aturan tone & isi sama dengan add_cell_analysis.",
+              "type": "STRING"
+            },
+            "imageIndex": {
+              "description": "Index gambar lampiran (0-based) dari daftar yang diberikan. WAJIB diisi untuk setiap screenshot implementasi atau post_test agar gambar terhubung ke entri ini.",
+              "type": "NUMBER"
+            },
+            "notebookIndex": {
+              "description": "Index file notebook (0-based) jika terdapat lebih dari satu notebook yang diupload.",
+              "type": "NUMBER"
+            },
+            "section": {
+              "description": "Salah satu dari 'implementasi' atau 'post_test'.",
+              "type": "STRING"
+            },
+            "tableCaption": {
+              "description": "Caption dinamis khusus untuk output visual (tabel DataFrame/Grafik/Plot). DILARANG KERAS menggunakan kata generic seperti \\"Tabel/Output DataFrame\\"!",
+              "type": "STRING"
+            }
+          },
+          "type": "OBJECT"
+        }
+      },
+      "required": [
+        "matcher",
+        "patch"
+      ],
+      "type": "OBJECT"
+    }
+  },
+  {
+    "description": "Delete a CellAnalysis entry by matcher. Same matcher semantics as update_cell_analysis.",
+    "name": "delete_cell_analysis",
+    "parameters": {
+      "properties": {
+        "matcher": "[Circular]"
+      },
+      "required": [
+        "matcher"
+      ],
+      "type": "OBJECT"
+    }
+  },
+  {
+    "description": "Replace the report's \`pendahuluan\` (introduction) with the supplied Indonesian-language narrative paragraph.",
+    "name": "set_pendahuluan",
+    "parameters": {
+      "properties": {
+        "text": {
+          "description": "Bab Pendahuluan yang memuat latar belakang kajian atau tugas secara komprehensif. Susun narasinya dengan rapi.",
+          "type": "STRING"
+        }
+      },
+      "required": [
+        "text"
+      ],
+      "type": "OBJECT"
+    }
+  },
+  {
+    "description": "Replace the report's \`alatDanBahan\` (tools and materials) list. Each entry is one numbered or labeled item, e.g. '1. Perangkat Keras: PC Lab'.",
+    "name": "set_alat_dan_bahan",
+    "parameters": {
+      "properties": {
+        "items": {
+          "description": "Daftar perangkat (Keras, Lunak, Library, Bahasa Pemrograman dll). Contoh array: [\\"1. Perangkat Keras: PC Lab\\", \\"2. Perangkat Lunak: Browser\\", \\"3. Bahasa Pemrograman: Python\\", \\"4. Library: Pandas, Numpy\\"]",
+          "items": {
+            "type": "STRING"
+          },
+          "type": "ARRAY"
+        }
+      },
+      "required": [
+        "items"
+      ],
+      "type": "OBJECT"
+    }
+  },
+  {
+    "description": "Replace the report's \`stepByStepNarrative\` (Langkah Kerja) with markdown-formatted steps.",
+    "name": "set_step_by_step_narrative",
+    "parameters": {
+      "properties": {
+        "text": {
+          "description": "Penjelasan naratif (narasi dengan format markdown list agar rapi dan bagus) step-by-step implementasinya",
+          "type": "STRING"
+        }
+      },
+      "required": [
+        "text"
+      ],
+      "type": "OBJECT"
+    }
+  },
+  {
+    "description": "Replace the report's \`codeAnalysis\` (overall analysis paragraph) with the supplied Indonesian-language narrative.",
+    "name": "set_code_analysis",
+    "parameters": {
+      "properties": {
+        "text": {
+          "description": "Analisis keseluruhan dari implementasi kode hasil praktikum. Tulis dalam bahasa Indonesia yang mengalir dan koheren.",
+          "type": "STRING"
+        }
+      },
+      "required": [
+        "text"
+      ],
+      "type": "OBJECT"
+    }
+  },
+  {
+    "description": "Replace the report's pre-test Q&A list. Each entry pairs an exact question text with its answer. Do not abbreviate the question.",
+    "name": "set_pre_test_qa",
+    "parameters": {
+      "properties": {
+        "pairs": {
+          "description": "Daftar pasangan soal & jawaban Pre Test. Pertanyaan harus persis seperti modul (boleh markdown list bila ada sub-poin).",
+          "items": {
+            "properties": {
+              "a": {
+                "description": "Jawaban detail untuk pertanyaan tersebut.",
+                "type": "STRING"
+              },
+              "q": {
+                "description": "Teks pertanyaan persis seperti pada modul. JANGAN disingkat atau diparafrase.",
+                "type": "STRING"
+              }
+            },
+            "required": [
+              "q",
+              "a"
+            ],
+            "type": "OBJECT"
+          },
+          "type": "ARRAY"
+        }
+      },
+      "required": [
+        "pairs"
+      ],
+      "type": "OBJECT"
+    }
+  },
+  {
+    "description": "Replace the report's post-test Q&A list. Same shape as set_pre_test_qa.",
+    "name": "set_post_test_qa",
+    "parameters": {
+      "properties": {
+        "pairs": {
+          "description": "Daftar pasangan soal & jawaban Post Test (Tugas). Pertanyaan harus persis seperti modul; gunakan markdown list untuk sub-points seperti Tugas A, Tugas B.",
+          "items": "[Circular]",
+          "type": "ARRAY"
+        }
+      },
+      "required": [
+        "pairs"
+      ],
+      "type": "OBJECT"
+    }
+  },
+  {
+    "description": "Declare the agent's planned subtasks for this run. The user sees this as a checklist in the Active Task Panel. Each step should be concrete and actionable. Call once at the start of a complex run.",
+    "name": "set_task_plan",
+    "parameters": {
+      "properties": {
+        "steps": {
+          "description": "Ordered list of planned subtasks. Each step renders as a checklist row.",
+          "items": {
+            "properties": {
+              "description": {
+                "description": "Optional longer explanation shown beneath the title.",
+                "type": "STRING"
+              },
+              "id": {
+                "description": "Stable identifier for this step. Used by update_task_status to update progress.",
+                "type": "STRING"
+              },
+              "title": {
+                "description": "Short, user-readable label for the step.",
+                "type": "STRING"
+              }
+            },
+            "required": [
+              "id",
+              "title"
+            ],
+            "type": "OBJECT"
+          },
+          "type": "ARRAY"
+        }
+      },
+      "required": [
+        "steps"
+      ],
+      "type": "OBJECT"
+    }
+  },
+  {
+    "description": "Update the status of a previously-declared task plan step.",
+    "name": "update_task_status",
+    "parameters": {
+      "properties": {
+        "id": {
+          "description": "The id of the step declared via set_task_plan.",
+          "type": "STRING"
+        },
+        "status": {
+          "description": "New status for the step.",
+          "enum": [
+            "pending",
+            "active",
+            "done"
+          ],
+          "type": "STRING"
+        }
+      },
+      "required": [
+        "id",
+        "status"
+      ],
+      "type": "OBJECT"
+    }
+  },
+  {
+    "description": "Pause the agent and ask the user a clarifying question. The agent will resume after the user replies via the chat composer. Use this when the input is ambiguous and a wrong assumption would waste tokens.",
+    "name": "request_user_clarification",
+    "parameters": {
+      "properties": {
+        "question": {
+          "description": "The clarifying question to surface to the user verbatim.",
+          "type": "STRING"
+        }
+      },
+      "required": [
+        "question"
+      ],
+      "type": "OBJECT"
+    }
+  },
+  {
+    "description": "Signal that the agent has finished its current Run. Optional one-line summary becomes the agent's final chat message.",
+    "name": "mark_task_complete",
+    "parameters": {
+      "properties": {
+        "summary": {
+          "description": "Optional one-line wrap-up shown to the user as the agent's final message.",
+          "type": "STRING"
+        }
+      },
+      "type": "OBJECT"
+    }
+  },
+  {
+    "description": "Re-inspect a specific uploaded image by category and index. The next iteration will receive only that image plus a focused prompt — useful when you need to verify a detail without scanning the whole batch again.",
+    "name": "inspect_image",
+    "parameters": {
+      "properties": {
+        "category": {
+          "description": "Which uploaded image bucket to pull from.",
+          "enum": [
+            "pre_test",
+            "implementasi",
+            "post_test",
+            "notebook"
+          ],
+          "type": "STRING"
+        },
+        "index": {
+          "description": "0-based index inside the chosen category bucket.",
+          "type": "NUMBER"
+        }
+      },
+      "required": [
+        "category",
+        "index"
+      ],
+      "type": "OBJECT"
+    }
+  },
+  {
+    "description": "Read a specific notebook cell's source and outputs. Returns text only; use inspect_image for cell visual outputs. Useful to re-check code mid-run.",
+    "name": "read_notebook_cell",
+    "parameters": {
+      "properties": {
+        "cellIndex": {
+          "description": "0-based index of the cell within the chosen notebook.",
+          "type": "NUMBER"
+        },
+        "notebookIndex": {
+          "description": "0-based index of the notebook file when multiple were uploaded.",
+          "type": "NUMBER"
+        }
+      },
+      "required": [
+        "notebookIndex",
+        "cellIndex"
+      ],
+      "type": "OBJECT"
+    }
+  }
+]"
+`;

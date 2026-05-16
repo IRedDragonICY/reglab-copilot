@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo } from 'react';
 import { useAppStore } from '@/lib/store';
 import { format } from 'date-fns';
 import {
@@ -55,59 +56,80 @@ function PanelHeader({
 /* --------------------------------------------------------------------------- */
 
 export function HomeTab() {
-  const store = useAppStore();
+  // Sliced subscriptions — re-render only when these specific arrays
+  // change reference. The previous `useAppStore()` no-selector call
+  // re-rendered HomeTab on every store mutation (including unrelated
+  // toggleCopilot / setActiveTab calls), which combined with the
+  // O(n log n) sort below caused noticeable jank during boot.
+  const sessions = useAppStore((s) => s.sessions);
+  const schedules = useAppStore((s) => s.schedules);
+  const mataPraktikumList = useAppStore((s) => s.mataPraktikumList);
+  const manualProgress = useAppStore((s) => s.manualProgress);
+  const createNewSession = useAppStore((s) => s.createNewSession);
+  const deleteAllSessions = useAppStore((s) => s.deleteAllSessions);
+  const toggleManualProgress = useAppStore((s) => s.toggleManualProgress);
+  const openSessionTab = useAppStore((s) => s.openSessionTab);
+  const deleteSession = useAppStore((s) => s.deleteSession);
 
   const handleCreateRef = () => {
-    store.createNewSession();
+    createNewSession();
   };
 
-  const sortedSessions = [...store.sessions].sort((a, b) => b.updatedAt - a.updatedAt);
+  // Memoize the sort: O(n log n) only when `sessions` reference flips.
+  const sortedSessions = useMemo(
+    () => [...sessions].sort((a, b) => b.updatedAt - a.updatedAt),
+    [sessions],
+  );
 
-  const groupedPraktikum: Record<
-    string,
-    { pertemuan: number; type: 'auto' | 'manual'; date?: string }[]
-  > = {};
+  // Memoize the grouping pipeline. Recomputes only when one of the
+  // four source slices changes reference.
+  const { groupedPraktikum, praktikumSubjects } = useMemo(() => {
+    const grouped: Record<
+      string,
+      { pertemuan: number; type: 'auto' | 'manual'; date?: string }[]
+    > = {};
+    const allSubjects = new Set<string>();
 
-  const allSubjects = new Set<string>();
+    (mataPraktikumList || []).forEach((subject) => {
+      if (subject) allSubjects.add(subject);
+    });
 
-  (store.mataPraktikumList || []).forEach((subject) => {
-    if (subject) allSubjects.add(subject);
-  });
+    (schedules || []).forEach((schedule) => {
+      if (schedule.mataPraktikum) allSubjects.add(schedule.mataPraktikum);
+    });
 
-  (store.schedules || []).forEach((schedule) => {
-    if (schedule.mataPraktikum) allSubjects.add(schedule.mataPraktikum);
-  });
+    allSubjects.forEach((subject) => {
+      grouped[subject] = [];
+    });
 
-  allSubjects.forEach((subject) => {
-    groupedPraktikum[subject] = [];
-  });
-
-  store.sessions.forEach((session) => {
-    const { reportType, mataPraktikum, pertemuan, hariTanggalSesi } = session.metadata;
-    if ((reportType === 'praktikum' || !reportType) && mataPraktikum && mataPraktikum.trim() !== '') {
-      if (!groupedPraktikum[mataPraktikum]) groupedPraktikum[mataPraktikum] = [];
-      if (pertemuan) {
-        const existing = groupedPraktikum[mataPraktikum].find((p) => p.pertemuan === pertemuan);
-        const dateStr = hariTanggalSesi || format(new Date(session.updatedAt), 'dd MMM yyyy, HH:mm');
-        if (!existing) {
-          groupedPraktikum[mataPraktikum].push({ pertemuan, type: 'auto', date: dateStr });
+    sessions.forEach((session) => {
+      const { reportType, mataPraktikum, pertemuan, hariTanggalSesi } = session.metadata;
+      if ((reportType === 'praktikum' || !reportType) && mataPraktikum && mataPraktikum.trim() !== '') {
+        if (!grouped[mataPraktikum]) grouped[mataPraktikum] = [];
+        if (pertemuan) {
+          const existing = grouped[mataPraktikum].find((p) => p.pertemuan === pertemuan);
+          const dateStr = hariTanggalSesi || format(new Date(session.updatedAt), 'dd MMM yyyy, HH:mm');
+          if (!existing) {
+            grouped[mataPraktikum].push({ pertemuan, type: 'auto', date: dateStr });
+          }
         }
       }
-    }
-  });
-
-  const manualProgress = store.manualProgress || {};
-  Object.keys(manualProgress).forEach((subject) => {
-    if (!groupedPraktikum[subject]) groupedPraktikum[subject] = [];
-    manualProgress[subject].forEach((pertemuanNum) => {
-      const existing = groupedPraktikum[subject].find((p) => p.pertemuan === pertemuanNum);
-      if (!existing) {
-        groupedPraktikum[subject].push({ pertemuan: pertemuanNum, type: 'manual' });
-      }
     });
-  });
 
-  const praktikumSubjects = Object.keys(groupedPraktikum);
+    const mp = manualProgress || {};
+    Object.keys(mp).forEach((subject) => {
+      if (!grouped[subject]) grouped[subject] = [];
+      mp[subject].forEach((pertemuanNum) => {
+        const existing = grouped[subject].find((p) => p.pertemuan === pertemuanNum);
+        if (!existing) {
+          grouped[subject].push({ pertemuan: pertemuanNum, type: 'manual' });
+        }
+      });
+    });
+
+    return { groupedPraktikum: grouped, praktikumSubjects: Object.keys(grouped) };
+  }, [sessions, schedules, mataPraktikumList, manualProgress]);
+
 
   return (
     <div className="h-full flex flex-col gap-2 w-full font-sans text-[#EDEDED]">
@@ -178,7 +200,7 @@ export function HomeTab() {
                             return (
                               <button
                                 key={pertemuanNum}
-                                onClick={() => store.toggleManualProgress(subject, pertemuanNum)}
+                                onClick={() => toggleManualProgress(subject, pertemuanNum)}
                                 title={tooltip}
                                 className={`group relative flex-1 h-8 flex flex-col items-center justify-center transition-colors border-r last:border-r-0 border-[#1F1F1F] ${
                                   isDone
@@ -255,7 +277,7 @@ export function HomeTab() {
                   {sortedSessions.length > 0 && (
                     <button
                       onClick={() => {
-                        store.deleteAllSessions();
+                        deleteAllSessions();
                         toast.success('All history cleared');
                       }}
                       className="h-6 px-2 text-[10px] text-[#A1A1A1] hover:text-[#F85149] hover:bg-[#1C1C1C] transition-colors rounded-sm"
@@ -283,7 +305,7 @@ export function HomeTab() {
                   {sortedSessions.map((session) => (
                     <li
                       key={session.id}
-                      onClick={() => store.openSessionTab(session)}
+                      onClick={() => openSessionTab(session)}
                       className="group relative flex items-start gap-3 px-3 py-2.5 hover:bg-[#111111] cursor-pointer transition-colors"
                     >
                       <FileText className="w-3.5 h-3.5 text-[#2F81F7] shrink-0 mt-0.5" />
@@ -296,7 +318,7 @@ export function HomeTab() {
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              store.deleteSession(session.id);
+                              deleteSession(session.id);
                               toast.success('Session deleted');
                             }}
                             className="shrink-0 w-5 h-5 flex items-center justify-center text-[#6E6E6E] hover:text-[#F85149] hover:bg-[#1C1C1C] opacity-0 group-hover:opacity-100 transition-all rounded-sm"

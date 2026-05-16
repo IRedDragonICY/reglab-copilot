@@ -18,6 +18,7 @@ import { useSessionAutosave } from '@/hooks/use-session-autosave';
 import { useReportDownload } from '@/hooks/use-report-download';
 import { useScheduleAutofill } from '@/hooks/use-schedule-autofill';
 import { useColabFetcher, seedColabCacheFromSession } from '@/hooks/use-colab-fetcher';
+import { cn } from '@/lib/utils';
 
 export function SessionTab({ sessionId }: { sessionId: string }) {
   const store = useAppStore();
@@ -102,8 +103,32 @@ export function SessionTab({ sessionId }: { sessionId: string }) {
     selectedModelName,
     setSelectedModelName,
     generateReport: generateReportAI,
-    compileEdit: compileEditAI
-  } = useCopilotAI();
+    compileEdit: compileEditAI,
+    runState,
+    iteration,
+    maxLoops,
+    currentTool,
+    retryStatus,
+    taskPlan,
+    pause,
+    stop,
+    continueRun,
+    saveManualCheckpoint,
+    checkpoints,
+    revertToCheckpointById,
+    pendingMerge,
+    acceptHunk,
+    rejectHunk,
+    acceptAllHunks,
+    rejectAllHunks,
+    submitClarification,
+    pendingClarification,
+    clearChat,
+    undoToMessage,
+    chatThreads,
+    openThread,
+    deleteThread,
+  } = useCopilotAI(session);
 
   // Load Saved Session Data and Populate Cache
   useEffect(() => {
@@ -328,12 +353,32 @@ export function SessionTab({ sessionId }: { sessionId: string }) {
             className="shrink-0 flex flex-row relative h-full bg-[#0A0A0A] z-20 border-l border-[#1F1F1F]"
             style={{ width: `${sidebarWidth}px` }}
           >
-            {/* Draggable Handle */}
-            <div 
+            {/* 12px hit area, transparent — easy to grab */}
+            <div
               {...dragHandleProps}
-              className={`absolute -left-1 top-0 bottom-0 w-2 cursor-col-resize z-50 flex flex-col items-center justify-center group ${isDragging ? 'bg-[#2F81F7]/20' : 'hover:bg-[#2F81F7]/10'}`}
+              className="absolute -left-1.5 top-0 bottom-0 w-3 cursor-col-resize z-50 group"
+              title="Drag to resize Copilot panel"
             >
-              <div className={`w-px h-10 transition-colors ${isDragging ? 'bg-[#2F81F7]' : 'bg-[#1F1F1F] group-hover:bg-[#2F81F7]'}`} />
+              {/* 4px visible strip, centered in hit area */}
+              <div
+                className={cn(
+                  "absolute left-1 top-0 bottom-0 w-1 transition-colors duration-100",
+                  isDragging
+                    ? "bg-[#2F81F7]"
+                    : "bg-transparent group-hover:bg-[#2F81F7]/60 group-hover:delay-100"
+                )}
+              />
+              {/* Three-dot grip indicator, centered, only visible on hover/drag */}
+              <div
+                className={cn(
+                  "absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col gap-1 transition-opacity duration-100",
+                  isDragging ? "opacity-100" : "opacity-0 group-hover:opacity-100 group-hover:delay-100"
+                )}
+              >
+                <div className="w-0.5 h-0.5 rounded-full bg-[#A1A1A1]" />
+                <div className="w-0.5 h-0.5 rounded-full bg-[#A1A1A1]" />
+                <div className="w-0.5 h-0.5 rounded-full bg-[#A1A1A1]" />
+              </div>
             </div>
 
             {/* Sidebar Content */}
@@ -376,6 +421,23 @@ export function SessionTab({ sessionId }: { sessionId: string }) {
                       chatHistory={chatHistory} isGenerating={isGenerating} statusText={statusText}
                       selectedModelName={selectedModelName} setSelectedModelName={setSelectedModelName} availableModels={AVAILABLE_MODELS}
                       handleGenerate={handleGenerate} aiPreviewData={aiPreviewData} chatInput={chatInput} setChatInput={setChatInput} handleCompileEdit={handleCompileEdit}
+                      sessionTitle={session?.title || metadata.judulPertemuan || metadata.mataPraktikum || 'New chat'}
+                      onNewChat={clearChat}
+                      onClose={() => store.toggleCopilot()}
+                      runState={runState} iteration={iteration} maxLoops={maxLoops}
+                      currentTool={currentTool} retryStatus={retryStatus} taskPlan={taskPlan}
+                      pause={pause} stop={stop} continueRun={continueRun}
+                      saveManualCheckpoint={saveManualCheckpoint}
+                      checkpoints={checkpoints} revertToCheckpointById={revertToCheckpointById}
+                      undoToMessage={undoToMessage}
+                      chatThreads={chatThreads}
+                      onOpenThread={openThread}
+                      onDeleteThread={deleteThread}
+                      pendingMerge={pendingMerge}
+                      acceptHunk={acceptHunk} rejectHunk={rejectHunk}
+                      acceptAllHunks={acceptAllHunks} rejectAllHunks={rejectAllHunks}
+                      pendingClarification={pendingClarification}
+                      submitClarification={submitClarification}
                     />
                   )}
 

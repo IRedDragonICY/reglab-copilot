@@ -11,6 +11,32 @@
  * IndexedDB payloads must continue to deserialize without migration.
  */
 
+import type {
+  CopilotMessage,
+  Checkpoint,
+  ChatThread,
+  LoopCursor,
+  RunState,
+  PendingMerge,
+  TaskPlan,
+} from '@/lib/copilot/types';
+
+// Re-export Copilot domain types from the canonical session module so
+// downstream consumers can `import type { Checkpoint } from '@/lib/types'`
+// without reaching into `@/lib/copilot/types` and risking circular imports.
+export type {
+  CopilotMessage,
+  Checkpoint,
+  ChatThread,
+  LoopCursor,
+  RunState,
+  PendingMerge,
+  TaskPlan,
+  TaskPlanStep,
+  TaskStatus,
+  CopilotSettings,
+} from '@/lib/copilot/types';
+
 export interface UserProfile {
   nama: string;
   nim: string;
@@ -114,4 +140,33 @@ export interface ReportSession {
   modulContext: string;
   postTest: string;
   aiData?: AIReportData;
+  // ---------------------------------------------------------------------------
+  // Copilot agent upgrade — purely additive optional fields.
+  // Every field below is optional so legacy IndexedDB payloads continue to
+  // deserialize without migration. See design.md "Persistence" and
+  // requirements.md Req 9.2 (no rename / no remove).
+  // ---------------------------------------------------------------------------
+  /** Persisted Copilot chat transcript for this session (Req 1). */
+  chatHistory?: CopilotMessage[];
+  /**
+   * Archived chat threads for this session. The live thread is
+   * `chatHistory`; "New chat" archives the live thread here before
+   * resetting. Per-report history (like Cursor's per-project chat
+   * list) — never mixed with threads from other reports.
+   */
+  chatThreads?: ChatThread[];
+  /** Auto + manual snapshots used by Revert / Continue (Req 4). */
+  checkpoints?: Checkpoint[];
+  /** Resume state for a paused or interrupted Agent_Loop (Req 3). */
+  loopCursor?: LoopCursor | null;
+  /** Lifecycle of the Agent_Loop driving this session. */
+  runState?: RunState;
+  /** Computed-but-not-applied merge awaiting review when Auto_Accept is OFF (Req 5.4). */
+  pendingMerge?: PendingMerge | null;
+  /** Declared task plan from `set_task_plan` / `update_task_status` (Req 6.2, 7.5). */
+  taskPlan?: TaskPlan | null;
+  /** Free-text steer the user wants the next iteration to honor (Req 11). */
+  pendingUserSteer?: string | null;
+  /** Atomic clarification block: a question awaiting a user reply (Req 6.4). */
+  pendingClarification?: { question: string; askedAt: number } | null;
 }

@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import { useAppStore } from '@/lib/store';
 import {
   X, Settings, Save, Key, SlidersHorizontal, Database, FileText, AlertTriangle,
-  Download, Upload, ShieldAlert, RefreshCcw, Loader2,
+  Download, Upload, ShieldAlert, RefreshCcw, Loader2, Wand2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -14,16 +14,18 @@ import {
   type BackupFile,
   type BackupSummary,
 } from '@/lib/backup';
+import { CopilotSettingsSection } from '@/components/copilot/copilot-settings-section';
 
 /* ---------------------------------------------------------------------------
    Flat pro-app preferences modal. Crisp 1px borders, no shadows, no pills.
 --------------------------------------------------------------------------- */
 
-type TabId = 'general' | 'model' | 'save' | 'backup';
+type TabId = 'general' | 'model' | 'copilot' | 'save' | 'backup';
 
 const TABS: { id: TabId; label: string; icon: React.ComponentType<any> }[] = [
   { id: 'general', label: 'General', icon: SlidersHorizontal },
   { id: 'model',   label: 'Model',   icon: Key },
+  { id: 'copilot', label: 'Copilot', icon: Wand2 },
   { id: 'save',    label: 'Export',  icon: Save },
   { id: 'backup',  label: 'Backup',  icon: Database },
 ];
@@ -532,6 +534,9 @@ export function OptionsModal() {
                     </FieldRow>
                   </div>
                 )}
+
+                {/* ==================== COPILOT ==================== */}
+                {activeTab === 'copilot' && <CopilotSettingsSection />}
 
                 {/* ==================== SAVE ==================== */}
                 {activeTab === 'save' && (
