@@ -44,10 +44,7 @@ export interface TaskPlanCardProps {
 }
 
 function deriveDefaultExpanded(plan: TaskPlan | null): boolean {
-  if (!plan || plan.steps.length === 0) return false;
-  const allDone = plan.steps.every((s) => s.status === 'done');
-  if (allDone) return false;
-  return true; // any active or pending → expanded
+  return false;
 }
 
 export function TaskPlanCard({

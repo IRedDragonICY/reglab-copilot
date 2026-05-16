@@ -28,6 +28,9 @@ function MenuItem({ label, onClick }: { label: string; onClick?: () => void }) {
   );
 }
 
+import { useResizableSidebar } from '@/hooks/use-resizable-sidebar';
+import { cn } from '@/lib/utils';
+
 export default function AppMain() {
   const store = useAppStore();
   const [fileMenuOpen, setFileMenuOpen] = useState(false);
@@ -46,13 +49,16 @@ export default function AppMain() {
     store.activeTab === 'home' ? 'Home' : activeSession?.title || 'Untitled';
 
   const isDocView = store.activeTab !== 'home';
+  const isSidebarVisible = !!isDocView && store.isCopilotOpen;
+  const { width: sidebarWidth, isDragging, dragHandleProps } = useResizableSidebar();
 
   return (
-    <div className="flex flex-col h-screen w-full bg-[#0A0A0A] text-[#EDEDED] overflow-hidden">
+    <div className="flex flex-row h-screen w-full bg-[#0A0A0A] text-[#EDEDED] overflow-hidden">
       {/* =============================================================
-          HEADER: stacked menu → ribbon → tab strip (IDE style)
+          LEFT PANE: Header, Main Content, Footer
       ============================================================= */}
-      <header className="shrink-0 flex flex-col bg-[#0A0A0A] border-b border-[#1F1F1F] z-20 select-none">
+      <div className="flex flex-col flex-1 h-screen overflow-hidden min-w-0">
+        <header className="shrink-0 flex flex-col bg-[#0A0A0A] border-b border-[#1F1F1F] z-20 select-none">
         {/* ---------- Row 1: Menu bar (always visible) ---------- */}
         <div className="h-9 flex items-center justify-between px-2 border-b border-[#1A1A1A]">
           <div className="flex items-center gap-0.5">
@@ -241,17 +247,10 @@ export default function AppMain() {
       ============================================================= */}
       <footer className="shrink-0 h-6 flex items-center justify-between px-3 bg-[#0A0A0A] border-t border-[#1F1F1F] text-[11px] text-[#6E6E6E]">
         <div className="flex items-center gap-3">
-          <span className="flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 bg-[#2EA043] rounded-full" />
-            <span className="text-[#A1A1A1]">All changes saved locally</span>
-          </span>
           {store.sessions.length > 0 && (
-            <>
-              <span className="text-[#2A2A2A]">·</span>
-              <span>
-                {store.sessions.length} {store.sessions.length === 1 ? 'report' : 'reports'}
-              </span>
-            </>
+            <span>
+              {store.sessions.length} {store.sessions.length === 1 ? 'report' : 'reports'}
+            </span>
           )}
           {activeSession?.metadata?.mataPraktikum && (
             <>
@@ -266,6 +265,41 @@ export default function AppMain() {
           <span>Reglab Copilot</span>
         </div>
       </footer>
+      </div>
+
+      {isSidebarVisible && (
+        <div
+          className="shrink-0 flex flex-row relative h-full bg-[#0A0A0A] z-40 border-l border-[#1F1F1F]"
+          style={{ width: `${sidebarWidth}px` }}
+        >
+          <div
+            {...dragHandleProps}
+            className="absolute -left-1.5 top-0 bottom-0 w-3 cursor-col-resize z-50 group"
+            title="Drag to resize Copilot panel"
+          >
+            <div
+              className={cn(
+                'absolute left-1 top-0 bottom-0 w-1 transition-colors duration-100',
+                isDragging
+                  ? 'bg-[#2F81F7]'
+                  : 'bg-transparent group-hover:bg-[#2F81F7]/60 group-hover:delay-100'
+              )}
+            />
+            <div
+              className={cn(
+                'absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col gap-1 transition-opacity duration-100',
+                isDragging ? 'opacity-100' : 'opacity-0 group-hover:opacity-100 group-hover:delay-100'
+              )}
+            >
+              <div className="w-0.5 h-0.5 rounded-full bg-[#A1A1A1]" />
+              <div className="w-0.5 h-0.5 rounded-full bg-[#A1A1A1]" />
+              <div className="w-0.5 h-0.5 rounded-full bg-[#A1A1A1]" />
+            </div>
+          </div>
+
+          <div id="sidebar-portal-target" className="w-full h-full flex flex-col overflow-hidden" />
+        </div>
+      )}
 
       <OptionsModal />
     </div>

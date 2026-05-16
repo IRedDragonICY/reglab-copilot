@@ -20,6 +20,8 @@ import { useScheduleAutofill } from '@/hooks/use-schedule-autofill';
 import { useColabFetcher, seedColabCacheFromSession } from '@/hooks/use-colab-fetcher';
 import { cn } from '@/lib/utils';
 
+import { createPortal } from 'react-dom';
+
 export function SessionTab({ sessionId }: { sessionId: string }) {
   const store = useAppStore();
   const session = store.sessions.find(s => s.id === sessionId);
@@ -303,6 +305,89 @@ export function SessionTab({ sessionId }: { sessionId: string }) {
     });
   };
 
+  const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
+
+  useEffect(() => {
+    setPortalTarget(document.getElementById('sidebar-portal-target'));
+  }, [store.isCopilotOpen]);
+
+  const sidebarContent = store.isCopilotOpen ? (
+    <div className="w-full h-full flex flex-col overflow-hidden">
+        {/* Header Panel */}
+        <div className="h-9 shrink-0 flex items-center justify-between pl-3 pr-1 border-b border-[#1F1F1F] bg-[#0A0A0A]">
+          <div className="flex h-full">
+            <button 
+              onClick={() => setActiveSidebarTab('chat')} 
+              className={`relative h-9 px-3 text-[12px] font-medium transition-colors ${activeSidebarTab === 'chat' ? 'text-[#EDEDED]' : 'text-[#6E6E6E] hover:text-[#A1A1A1]'}`}
+            >
+              Copilot
+              {activeSidebarTab === 'chat' && (
+                <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#2F81F7]" />
+              )}
+            </button>
+            <button 
+              onClick={() => setActiveSidebarTab('settings')} 
+              className={`relative h-9 px-3 text-[12px] font-medium transition-colors ${activeSidebarTab === 'settings' ? 'text-[#EDEDED]' : 'text-[#6E6E6E] hover:text-[#A1A1A1]'}`}
+            >
+              Setup
+              {activeSidebarTab === 'settings' && (
+                <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#2F81F7]" />
+              )}
+            </button>
+          </div>
+          <button 
+            onClick={() => store.toggleCopilot()} 
+            className="w-7 h-7 flex items-center justify-center text-[#A1A1A1] hover:text-white hover:bg-[#161616] rounded-sm"
+            title="Close panel"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+        
+        {/* Content Panel */}
+        <div className="flex-1 overflow-hidden flex flex-col">
+          {activeSidebarTab === 'chat' && (
+            <CopilotPanel 
+              chatHistory={chatHistory} isGenerating={isGenerating} statusText={statusText}
+              selectedModelName={selectedModelName} setSelectedModelName={setSelectedModelName} availableModels={AVAILABLE_MODELS}
+              handleGenerate={handleGenerate} aiPreviewData={aiPreviewData} chatInput={chatInput} setChatInput={setChatInput} handleCompileEdit={handleCompileEdit}
+              sessionTitle={session?.title || metadata.judulPertemuan || metadata.mataPraktikum || 'New chat'}
+              onNewChat={clearChat}
+              onClose={() => store.toggleCopilot()}
+              runState={runState} iteration={iteration} maxLoops={maxLoops}
+              currentTool={currentTool} retryStatus={retryStatus} taskPlan={taskPlan}
+              pause={pause} stop={stop} continueRun={continueRun}
+              saveManualCheckpoint={saveManualCheckpoint}
+              checkpoints={checkpoints} revertToCheckpointById={revertToCheckpointById}
+              undoToMessage={undoToMessage}
+              chatThreads={chatThreads}
+              onOpenThread={openThread}
+              onDeleteThread={deleteThread}
+              pendingMerge={pendingMerge}
+              acceptHunk={acceptHunk} rejectHunk={rejectHunk}
+              acceptAllHunks={acceptAllHunks} rejectAllHunks={rejectAllHunks}
+              pendingClarification={pendingClarification}
+              submitClarification={submitClarification}
+            />
+          )}
+
+          {activeSidebarTab === 'settings' && (
+            <SettingsPanel 
+              metadata={metadata} setMetadata={setMetadata} store={store}
+              isAddingMk={isAddingMk} setIsAddingMk={setIsAddingMk} newMk={newMk} setNewMk={setNewMk}
+              handleCreateNewMataPraktikum={handleCreateNewMataPraktikum} handleMataPraktikumChange={handleMataPraktikumChange} handlePertemuanChange={handlePertemuanChange}
+              getRootProps={getRootProps} getInputProps={getInputProps} isDragActive={isDragActive} notebookFiles={notebookFiles} setNotebookFiles={setNotebookFiles} parsedNotebooks={parsedNotebooks} setParsedNotebooks={setParsedNotebooks} setGeneratedDocxBlob={setGeneratedDocxBlob}
+              preTest={preTest} setPreTest={setPreTest} handlePasteToUploader={handlePasteToUploader} preTestImages={preTestImages} setPreTestImages={setPreTestImages}
+              modulContext={modulContext} setModulContext={setModulContext} implImages={implImages} setImplImages={setImplImages}
+              postTest={postTest} setPostTest={setPostTest} postTestImages={postTestImages} setPostTestImages={setPostTestImages}
+              getRootPropsPt={getRootPropsPt} getInputPropsPt={getInputPropsPt} isDragActivePt={isDragActivePt} postTestNotebookFiles={postTestNotebookFiles} setPostTestNotebookFiles={setPostTestNotebookFiles} postTestParsedNotebooks={postTestParsedNotebooks} setPostTestParsedNotebooks={setPostTestParsedNotebooks}
+              saveCurrentSession={saveCurrentSession} handleSaveCustomDate={handleSaveCustomDate} handleGenerate={handleGenerate} aiPreviewData={aiPreviewData} isGenerating={isGenerating}
+            />
+          )}
+        </div>
+    </div>
+  ) : null;
+
   return (
     <div ref={containerRef} className="flex w-full h-full min-h-0 bg-[#0A0A0A] text-sm overflow-hidden flex-row">
        
@@ -347,117 +432,10 @@ export function SessionTab({ sessionId }: { sessionId: string }) {
            )}
        </div>
 
-       {/* Right side: Resizable Sidebar Container */}
-       {store.isCopilotOpen && (
-          <div 
-            className="shrink-0 flex flex-row relative h-full bg-[#0A0A0A] z-20 border-l border-[#1F1F1F]"
-            style={{ width: `${sidebarWidth}px` }}
-          >
-            {/* 12px hit area, transparent — easy to grab */}
-            <div
-              {...dragHandleProps}
-              className="absolute -left-1.5 top-0 bottom-0 w-3 cursor-col-resize z-50 group"
-              title="Drag to resize Copilot panel"
-            >
-              {/* 4px visible strip, centered in hit area */}
-              <div
-                className={cn(
-                  "absolute left-1 top-0 bottom-0 w-1 transition-colors duration-100",
-                  isDragging
-                    ? "bg-[#2F81F7]"
-                    : "bg-transparent group-hover:bg-[#2F81F7]/60 group-hover:delay-100"
-                )}
-              />
-              {/* Three-dot grip indicator, centered, only visible on hover/drag */}
-              <div
-                className={cn(
-                  "absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col gap-1 transition-opacity duration-100",
-                  isDragging ? "opacity-100" : "opacity-0 group-hover:opacity-100 group-hover:delay-100"
-                )}
-              >
-                <div className="w-0.5 h-0.5 rounded-full bg-[#A1A1A1]" />
-                <div className="w-0.5 h-0.5 rounded-full bg-[#A1A1A1]" />
-                <div className="w-0.5 h-0.5 rounded-full bg-[#A1A1A1]" />
-              </div>
-            </div>
-
-            {/* Sidebar Content */}
-            <div className="w-full h-full flex flex-col overflow-hidden">
-                {/* Header Panel */}
-                <div className="h-9 flex items-center justify-between pl-3 pr-1 border-b border-[#1F1F1F] bg-[#0A0A0A]">
-                  <div className="flex h-full">
-                    <button 
-                      onClick={() => setActiveSidebarTab('chat')} 
-                      className={`relative h-9 px-3 text-[12px] font-medium transition-colors ${activeSidebarTab === 'chat' ? 'text-[#EDEDED]' : 'text-[#6E6E6E] hover:text-[#A1A1A1]'}`}
-                    >
-                      Copilot
-                      {activeSidebarTab === 'chat' && (
-                        <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#2F81F7]" />
-                      )}
-                    </button>
-                    <button 
-                      onClick={() => setActiveSidebarTab('settings')} 
-                      className={`relative h-9 px-3 text-[12px] font-medium transition-colors ${activeSidebarTab === 'settings' ? 'text-[#EDEDED]' : 'text-[#6E6E6E] hover:text-[#A1A1A1]'}`}
-                    >
-                      Setup
-                      {activeSidebarTab === 'settings' && (
-                        <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#2F81F7]" />
-                      )}
-                    </button>
-                  </div>
-                  <button 
-                    onClick={() => store.toggleCopilot()} 
-                    className="w-7 h-7 flex items-center justify-center text-[#A1A1A1] hover:text-white hover:bg-[#161616] rounded-sm"
-                    title="Close panel"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-                
-                {/* Content Panel */}
-                <div className="flex-1 overflow-hidden flex flex-col">
-                  {activeSidebarTab === 'chat' && (
-                    <CopilotPanel 
-                      chatHistory={chatHistory} isGenerating={isGenerating} statusText={statusText}
-                      selectedModelName={selectedModelName} setSelectedModelName={setSelectedModelName} availableModels={AVAILABLE_MODELS}
-                      handleGenerate={handleGenerate} aiPreviewData={aiPreviewData} chatInput={chatInput} setChatInput={setChatInput} handleCompileEdit={handleCompileEdit}
-                      sessionTitle={session?.title || metadata.judulPertemuan || metadata.mataPraktikum || 'New chat'}
-                      onNewChat={clearChat}
-                      onClose={() => store.toggleCopilot()}
-                      runState={runState} iteration={iteration} maxLoops={maxLoops}
-                      currentTool={currentTool} retryStatus={retryStatus} taskPlan={taskPlan}
-                      pause={pause} stop={stop} continueRun={continueRun}
-                      saveManualCheckpoint={saveManualCheckpoint}
-                      checkpoints={checkpoints} revertToCheckpointById={revertToCheckpointById}
-                      undoToMessage={undoToMessage}
-                      chatThreads={chatThreads}
-                      onOpenThread={openThread}
-                      onDeleteThread={deleteThread}
-                      pendingMerge={pendingMerge}
-                      acceptHunk={acceptHunk} rejectHunk={rejectHunk}
-                      acceptAllHunks={acceptAllHunks} rejectAllHunks={rejectAllHunks}
-                      pendingClarification={pendingClarification}
-                      submitClarification={submitClarification}
-                    />
-                  )}
-
-                  {activeSidebarTab === 'settings' && (
-                    <SettingsPanel 
-                      metadata={metadata} setMetadata={setMetadata} store={store}
-                      isAddingMk={isAddingMk} setIsAddingMk={setIsAddingMk} newMk={newMk} setNewMk={setNewMk}
-                      handleCreateNewMataPraktikum={handleCreateNewMataPraktikum} handleMataPraktikumChange={handleMataPraktikumChange} handlePertemuanChange={handlePertemuanChange}
-                      getRootProps={getRootProps} getInputProps={getInputProps} isDragActive={isDragActive} notebookFiles={notebookFiles} setNotebookFiles={setNotebookFiles} parsedNotebooks={parsedNotebooks} setParsedNotebooks={setParsedNotebooks} setGeneratedDocxBlob={setGeneratedDocxBlob}
-                      preTest={preTest} setPreTest={setPreTest} handlePasteToUploader={handlePasteToUploader} preTestImages={preTestImages} setPreTestImages={setPreTestImages}
-                      modulContext={modulContext} setModulContext={setModulContext} implImages={implImages} setImplImages={setImplImages}
-                      postTest={postTest} setPostTest={setPostTest} postTestImages={postTestImages} setPostTestImages={setPostTestImages}
-                      getRootPropsPt={getRootPropsPt} getInputPropsPt={getInputPropsPt} isDragActivePt={isDragActivePt} postTestNotebookFiles={postTestNotebookFiles} setPostTestNotebookFiles={setPostTestNotebookFiles} postTestParsedNotebooks={postTestParsedNotebooks} setPostTestParsedNotebooks={setPostTestParsedNotebooks}
-                      saveCurrentSession={saveCurrentSession} handleSaveCustomDate={handleSaveCustomDate} handleGenerate={handleGenerate} aiPreviewData={aiPreviewData} isGenerating={isGenerating}
-                    />
-                  )}
-                </div>
-            </div>
-          </div>
-       )}
+       {/* Render Sidebar via Portal */}
+       {store.isCopilotOpen && portalTarget
+         ? createPortal(sidebarContent, portalTarget)
+         : null}
     </div>
   );
 }

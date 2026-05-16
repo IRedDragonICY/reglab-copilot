@@ -689,10 +689,10 @@ export function CopilotPanel(props: CopilotPanelProps) {
       />
 
       {/* ================= COMPOSER ================= */}
-      <div className="shrink-0 border-t border-[#1F1F1F] bg-[#0A0A0A]">
-        <div className="h-7 flex items-center justify-between px-3 border-b border-[#1F1F1F] bg-[#0A0A0A]">
+      <div className="shrink-0 border-t border-[#1F1F1F] bg-[#0A0A0A] flex flex-col pt-1.5 pb-2 px-2 gap-1.5">
+        <div className="flex items-center justify-between">
           <Select value={selectedModelName} onValueChange={(v) => v && setSelectedModelName(v)}>
-            <SelectTrigger className="h-6 bg-transparent border-none shadow-none focus:ring-0 focus:border-none focus-visible:ring-0 focus-visible:border-none px-1 text-[10px] font-mono text-[#A1A1A1] hover:text-white gap-1 rounded-sm">
+            <SelectTrigger className="h-5 bg-transparent border-none shadow-none focus:ring-0 focus:border-none focus-visible:ring-0 focus-visible:border-none px-1 py-0 text-[10px] font-mono text-[#A1A1A1] hover:text-[#EDEDED] gap-1 rounded-sm w-fit">
               <Sparkles className="w-2.5 h-2.5 text-[#2F81F7] shrink-0" />
               <SelectValue />
             </SelectTrigger>
@@ -722,40 +722,36 @@ export function CopilotPanel(props: CopilotPanelProps) {
             </SelectContent>
           </Select>
 
-          <span className="flex items-center gap-1.5 text-[11px] text-[#A1A1A1]">
-            <span
-              className={`w-1.5 h-1.5 rounded-full ${
-                isGenerating ? 'bg-[#D29922] animate-pulse' : 'bg-[#2EA043]'
-              }`}
-            />
-            {isGenerating ? 'Generating' : 'Ready'}
-          </span>
-        </div>
-
-        <div className="px-3 pt-3">
-          <button
-            onClick={handleGenerate}
-            disabled={isGenerating}
-            className="w-full h-9 flex items-center justify-center gap-2 bg-[#2F81F7] hover:bg-[#2563EB] disabled:bg-[#161616] disabled:text-[#4A4A4A] disabled:cursor-not-allowed text-white font-medium transition-colors rounded-sm"
-          >
-            <Sparkles className="w-3.5 h-3.5" />
-            <span className="text-[12px] tracking-wide uppercase">
-              {aiPreviewData ? 'Regenerate Analysis' : 'Generate Initial Report'}
+          {isGenerating && (
+            <span className="flex items-center gap-1.5 text-[10px] text-[#A1A1A1]">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#D29922] animate-pulse" />
+              Generating
             </span>
-          </button>
+          )}
         </div>
 
-        <div className="p-3 pt-2">
+        <button
+          onClick={handleGenerate}
+          disabled={isGenerating}
+          className="w-full h-8 flex items-center justify-center gap-1.5 bg-[#2F81F7] hover:bg-[#2563EB] disabled:bg-[#161616] disabled:text-[#4A4A4A] disabled:cursor-not-allowed text-white font-medium transition-colors rounded-sm"
+        >
+          <Sparkles className="w-3.5 h-3.5" />
+          <span className="text-[11px] tracking-wide uppercase">
+            {aiPreviewData ? 'Regenerate Analysis' : 'Generate Initial Report'}
+          </span>
+        </button>
+
+        <div className="flex flex-col gap-1.5 w-full mt-0.5">
           {selectionContext && (
-            <div className="mb-2 flex items-start gap-2 px-2.5 py-1.5 bg-[#0F1A2E] border border-[#1F3A66] rounded-sm">
+            <div className="flex items-start gap-2 px-2 py-1.5 bg-[#0F1A2E] border border-[#1F3A66] rounded-sm">
               <Quote className="w-3 h-3 text-[#2F81F7] shrink-0 mt-0.5" />
               <div className="flex-1 min-w-0">
                 {selectionContext.field && (
-                  <div className="text-[10px] font-medium text-[#2F81F7] uppercase tracking-wide truncate">
+                  <div className="text-[9px] font-medium text-[#2F81F7] uppercase tracking-wide truncate">
                     {selectionContext.field}
                   </div>
                 )}
-                <div className="text-[11px] text-[#A1A1A1] truncate italic">
+                <div className="text-[10px] text-[#A1A1A1] truncate italic">
                   &ldquo;{selectionContext.text.length > 100 ? selectionContext.text.slice(0, 100) + '…' : selectionContext.text}&rdquo;
                 </div>
               </div>
@@ -763,28 +759,14 @@ export function CopilotPanel(props: CopilotPanelProps) {
                 type="button"
                 onClick={() => setSelectionContext(null)}
                 title="Clear selection context"
-                className="w-5 h-5 flex items-center justify-center text-[#6E6E6E] hover:text-white hover:bg-[#161616] rounded-sm shrink-0"
+                className="w-4 h-4 flex items-center justify-center text-[#6E6E6E] hover:text-white hover:bg-[#161616] rounded-sm shrink-0"
               >
-                <X className="w-3 h-3" />
+                <X className="w-2.5 h-2.5" />
                 <span className="sr-only">Clear</span>
               </button>
             </div>
           )}
-          <div className="relative border border-[#1F1F1F] focus-within:border-[#2F81F7] bg-[#0A0A0A] rounded-sm transition-colors">
-            <div className="flex items-center h-6 px-2.5 border-b border-[#1F1F1F] bg-[#0C0C0C]">
-              <span className="text-[10px] font-medium text-[#A1A1A1]">
-                {pendingClarification
-                  ? 'Reply to clarification'
-                  : runState === 'running'
-                    ? 'Steer the agent'
-                    : aiPreviewData
-                      ? 'Edit instructions'
-                      : 'Message Copilot'}
-              </span>
-              <span className="ml-auto text-[10px] text-[#6E6E6E]">
-                ⏎ to send · ⇧⏎ for newline
-              </span>
-            </div>
+          <div className="relative border border-[#1F1F1F] focus-within:border-[#2F81F7] bg-[#0A0A0A] rounded-sm transition-colors flex flex-col">
             <Textarea
               value={chatInput}
               onChange={(e) => {
@@ -799,29 +781,24 @@ export function CopilotPanel(props: CopilotPanelProps) {
               }}
               placeholder={placeholder}
               disabled={composerDisabled}
-              className="resize-none min-h-[72px] max-h-[180px] bg-transparent border-none text-[#EDEDED] focus-visible:ring-0 focus-visible:border-none rounded-none pl-3 pr-11 py-2.5 text-[13px] leading-relaxed transition-all custom-scrollbar placeholder:text-[#4A4A4A]"
+              className="resize-none min-h-[44px] max-h-[140px] bg-transparent border-none text-[#EDEDED] focus-visible:ring-0 focus-visible:border-none rounded-none px-2.5 py-2 text-[12px] leading-relaxed transition-all custom-scrollbar placeholder:text-[#4A4A4A]"
             />
             {runState === 'running' ? (
-              // Cursor-style red Stop square — morphs from the Send button
-              // while the agent is running so the action sits where the
-              // user's hand is, not in the panel header.
               <button
                 onClick={stop}
                 title="Stop the agent (cursor preserved for Pause; Stop clears it)"
-                className="absolute bottom-2 right-2 w-7 h-7 flex items-center justify-center bg-[#F85149] hover:bg-[#DA3633] text-white transition-colors rounded-full"
+                className="absolute right-1.5 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center bg-[#F85149] hover:bg-[#DA3633] text-white transition-colors rounded-sm"
               >
-                <Square className="w-3 h-3 fill-white" />
+                <Square className="w-2.5 h-2.5 fill-white" />
                 <span className="sr-only">Stop</span>
               </button>
             ) : runState === 'error' ? (
-              // Error state — clicking Stop clears the cursor explicitly,
-              // matching the cursor X behavior of typical agent UIs.
               <button
                 onClick={stop}
                 title="Dismiss error"
-                className="absolute bottom-2 right-2 w-7 h-7 flex items-center justify-center bg-[#F85149] hover:bg-[#DA3633] text-white transition-colors rounded-sm"
+                className="absolute right-1.5 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center bg-[#F85149] hover:bg-[#DA3633] text-white transition-colors rounded-sm"
               >
-                <XCircle className="w-3.5 h-3.5" />
+                <XCircle className="w-3 h-3" />
                 <span className="sr-only">Dismiss</span>
               </button>
             ) : (
@@ -829,17 +806,17 @@ export function CopilotPanel(props: CopilotPanelProps) {
                 onClick={handleSubmit}
                 disabled={composerDisabled || !chatInput.trim()}
                 title="Send"
-                className="absolute bottom-2 right-2 w-7 h-7 flex items-center justify-center bg-[#2F81F7] hover:bg-[#2563EB] disabled:bg-[#161616] disabled:text-[#4A4A4A] disabled:cursor-not-allowed text-white transition-colors rounded-sm"
+                className="absolute right-1.5 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center bg-[#2F81F7] hover:bg-[#2563EB] disabled:bg-transparent disabled:text-[#4A4A4A] disabled:cursor-not-allowed text-white transition-colors rounded-sm"
               >
                 <SendHorizonal className="w-3.5 h-3.5" />
               </button>
             )}
           </div>
           {composerError && (
-            <div className="mt-1.5 text-[11px] text-[#F85149]">{composerError}</div>
+            <div className="text-[10px] text-[#F85149] px-1">{composerError}</div>
           )}
           {runState === 'paused' && !pendingClarification && (
-            <div className="mt-1.5 text-[11px] text-[#D29922]">
+            <div className="text-[10px] text-[#D29922] px-1">
               Will steer agent on Continue.
             </div>
           )}
