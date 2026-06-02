@@ -7,6 +7,7 @@ export interface NotebookCell {
 export interface NotebookOutput {
   type: 'text' | 'image' | 'html';
   content: string; // text content or base64 string
+  fallbackText?: string;
 }
 
 export interface ParsedNotebook {
@@ -39,7 +40,7 @@ export function parseNotebook(jsonContent: string): ParsedNotebook {
                 const textHtml = Array.isArray(output.data['text/html']) ? output.data['text/html'].join('') : output.data['text/html'];
                 
                 // If it has text/html, always prefer it so it becomes an image in the DOCX (as requested by user)
-                outputs.push({ type: 'html', content: textHtml });
+                outputs.push({ type: 'html', content: textHtml, fallbackText: textPlain });
               } else if (output.data['text/html']) {
                 const text = Array.isArray(output.data['text/html']) ? output.data['text/html'].join('') : output.data['text/html'];
                 outputs.push({ type: 'html', content: text });

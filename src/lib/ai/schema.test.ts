@@ -89,7 +89,7 @@ describe('AI function declarations — byte stability', () => {
                         "type": "STRING"
                       },
                       "cellIndex": {
-                        "description": "Index sel notebook di dalam file tersebut",
+                        "description": "Index sel notebook di dalam file tersebut. WAJIB diisi! Jika bukan notebook (hanya gambar saja), isi dengan -1.",
                         "type": "NUMBER"
                       },
                       "explanation": {
@@ -101,7 +101,7 @@ describe('AI function declarations — byte stability', () => {
                         "type": "NUMBER"
                       },
                       "notebookIndex": {
-                        "description": "Index file notebook (0-based) jika terdapat lebih dari satu notebook yang diupload.",
+                        "description": "Index file notebook (0-based) jika terdapat lebih dari satu notebook yang diupload. WAJIB diisi! Jika bukan notebook (hanya gambar saja), isi dengan -1.",
                         "type": "NUMBER"
                       },
                       "section": {
@@ -116,7 +116,9 @@ describe('AI function declarations — byte stability', () => {
                     "required": [
                       "explanation",
                       "caption",
-                      "section"
+                      "section",
+                      "notebookIndex",
+                      "cellIndex"
                     ],
                     "type": "OBJECT"
                   },

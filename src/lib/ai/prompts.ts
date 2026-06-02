@@ -51,8 +51,11 @@ export function buildGenerationPrompt(ctx: GenerationPromptCtx): string {
         - Sebelum memanggil \`generate_report\` di batch terakhir, lakukan self-check: hitung jumlah gambar bertipe implementasi+post_test yang dikirim user, lalu pastikan jumlah entri \`cellAnalyses\` dengan \`imageIndex\` terisi minimal sama dengan jumlah gambar tersebut.
         - Untuk gambar Post-Test: \`section\` HARUS \`'post_test'\`. Untuk gambar Implementasi: \`section\` HARUS \`'implementasi'\`. Jangan tertukar.
 
+        PENJELASAN BLOK KODE NOTEBOOK (WAJIB JIKA ADA .IPYNB):
+        Jika mendapat input "Notebook Data" (.ipynb), Anda WAJIB membuat entri \`cellAnalyses\` untuk SETIAP sel kode (cell_type: "code") di dalam notebook tersebut. Isi \`notebookIndex\` dan \`cellIndex\` sesuai urutan. Berikan \`explanation\` yang mendalam untuk setiap blok kode. Jika sel kode tersebut tidak memiliki screenshot pendamping, abaikan \`imageIndex\` (jangan diisi), namun \`explanation\` HARUS tetap ada!
+
         OBSERVASI VISUAL WAJIB (UNTUK SETIAP SCREENSHOT):
-        Karena bahan utama laporan adalah SCREENSHOT (bukan notebook .ipynb), Anda WAJIB membaca isi gambar secara teliti dan menyebut detail spesifik pada \`explanation\`:
+        Jika laporan menyertakan SCREENSHOT, Anda WAJIB membaca isi gambar secara teliti dan menyebut detail spesifik pada \`explanation\`:
         - File / tab editor yang aktif (contoh: "app.js", "prak.html", "styles.css"), beserta nomor baris yang ter-highlight bila terlihat.
         - Identifier kode yang relevan (nama fungsi, variabel, selector D3, properti CSS, atribut SVG) yang muncul di screenshot.
         - Output / tampilan UI yang dihasilkan (warna bar, label sumbu, urutan kategori, opsi dropdown yang sedang dipilih, taskbar/jam pada bottom-right, dsb).
@@ -67,7 +70,7 @@ export function buildGenerationPrompt(ctx: GenerationPromptCtx): string {
         - "Gambar di atas menunjukkan..."
         - "Dapat disimpulkan bahwa..."
         - "Output dari kode di atas adalah..."
-        Sebagai gantinya, langsung sebut detail konkret yang teramati di screenshot (file, baris, identifier, warna, nilai, urutan), lalu kaitkan ke tujuan langkah praktikum. Tone laporan harus terdengar NATURAL seperti tulisan mahasiswa yang benar-benar mengerjakan, bukan teks template.
+        Sebagai gantinya, langsung sebut detail konkret yang teramati di screenshot (file, baris, identifier, warna, nilai, urutan), atau sebut alur logika kodenya. Tone laporan harus terdengar NATURAL seperti tulisan mahasiswa yang benar-benar mengerjakan, bukan teks template.
 
         MULTI-TURN BATCH PROCESSING (CRITICAL):
         TOTAL GAMBAR/VISUAL YANG DIKIRIMKAN ADALAH: ${ctx.totalImages} gambar.

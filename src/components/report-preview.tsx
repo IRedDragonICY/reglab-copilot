@@ -271,7 +271,7 @@ function ReportPreviewInner({
                 <div className="border-t border-gray-300 p-4 bg-white overflow-x-auto">
                   {htmlOutputs.map((out: any, oIdx: number) => (
                     <div key={oIdx} className="flex flex-col items-center">
-                      <div className="prose prose-sm max-w-none w-full" dangerouslySetInnerHTML={{ __html: out.content }} />
+                      <div className="w-full" dangerouslySetInnerHTML={{ __html: out.content }} />
                       <p className="mt-3 text-sm text-gray-800 font-bold text-center">Gambar {chapterPrefix}.{imgIdx++} {tableCaption}</p>
                     </div>
                   ))}
@@ -281,24 +281,35 @@ function ReportPreviewInner({
 
             <p className="text-center text-sm text-gray-800 font-bold mt-2">Kode Program {chapterPrefix}.{currentCodeIndex} {caption}</p>
             
-            {analysis && analysis.explanation && (
-              <div 
-                contentEditable suppressContentEditableWarning 
-                className="prose prose-sm max-w-none text-gray-900 my-4 text-justify outline-none border border-transparent focus:border-gray-300 focus:bg-gray-50 p-2 rounded transition-all"
-                onBlur={(e) => {
-                  if (onAiDataChange && cellAnalysesArray) {
-                     const newCellAnalyses = [...cellAnalysesArray];
-                     const targetIdx = newCellAnalyses.findIndex((a: any) => a.cellIndex === index && (a.notebookIndex === undefined || a.notebookIndex === notebookIndex));
-                     if (targetIdx !== -1) {
-                        newCellAnalyses[targetIdx] = { ...newCellAnalyses[targetIdx], explanation: e.currentTarget.innerText };
-                        onAiDataChange({ ...aiData, cellAnalyses: newCellAnalyses });
-                     }
-                  }
-                }}
-              >
-                <MarkdownBlock content={analysis.explanation} />
-              </div>
-            )}
+            <div 
+              contentEditable suppressContentEditableWarning 
+              className={`prose prose-sm max-w-none my-4 text-justify outline-none border border-transparent focus:border-gray-300 focus:bg-gray-50 p-2 rounded transition-all ${
+                (!analysis || !analysis.explanation) ? "text-gray-400 italic empty:before:content-['Tambahkan_penjelasan_di_sini...']" : "text-gray-900"
+              }`}
+              onBlur={(e) => {
+                if (onAiDataChange && cellAnalysesArray) {
+                   const textContent = e.currentTarget.innerText.trim();
+                   const newCellAnalyses = [...cellAnalysesArray];
+                   const targetIdx = newCellAnalyses.findIndex((a: any) => a.cellIndex === index && (a.notebookIndex === undefined || a.notebookIndex === notebookIndex));
+                   
+                   if (targetIdx !== -1) {
+                      newCellAnalyses[targetIdx] = { ...newCellAnalyses[targetIdx], explanation: textContent };
+                      onAiDataChange({ ...aiData, cellAnalyses: newCellAnalyses });
+                   } else if (textContent) {
+                      newCellAnalyses.push({
+                        cellIndex: index,
+                        notebookIndex: notebookIndex,
+                        explanation: textContent,
+                        caption: 'Blok Kode',
+                        section: chapterPrefix === 'II' ? 'implementasi' : 'post_test'
+                      });
+                      onAiDataChange({ ...aiData, cellAnalyses: newCellAnalyses });
+                   }
+                }
+              }}
+            >
+              {(analysis && analysis.explanation) ? <MarkdownBlock content={analysis.explanation} /> : null}
+            </div>
 
             {imageOutputs.map((out: any, oIdx: number) => {
               const base64Content = out.content.replace(/\s+/g, '');

@@ -1014,9 +1014,14 @@ export function useCopilotAI(session?: ReportSession | null) {
         combinedParsedNotebooks.forEach((nb, nbIdx) => {
           if (!nb) return;
           nb.cells.forEach((c: any, idx: number) => {
-            const textOutputs = c.outputs
-              ?.filter((o: any) => o.type === 'text')
-              .map((o: any) => ({ type: 'text', content: o.content }));
+            const textOutputs: any[] = [];
+            c.outputs?.forEach((o: any) => {
+              if (o.type === 'text') {
+                textOutputs.push({ type: 'text', content: o.content });
+              } else if (o.type === 'html' && o.fallbackText) {
+                textOutputs.push({ type: 'text', content: o.fallbackText });
+              }
+            });
             const imageOutputs = c.outputs?.filter((o: any) => o.type === 'image');
             if (imageOutputs && imageOutputs.length > 0) {
               textOutputs?.push({

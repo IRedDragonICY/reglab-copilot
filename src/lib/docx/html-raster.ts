@@ -13,7 +13,7 @@ export async function rasterizeHtml(
   if (typeof document === 'undefined') return null;
 
   const div = document.createElement('div');
-  const cleanHtmlContent = htmlContent.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '');
+  const cleanHtmlContent = htmlContent;
 
   div.innerHTML = cleanHtmlContent;
   div.style.position = 'absolute';

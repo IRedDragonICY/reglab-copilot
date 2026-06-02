@@ -172,15 +172,23 @@ export async function renderNotebookCells(
               );
               imgIdx++;
             }
-          } else {
-            // Rasterization failed — fall back to monospace text rendering.
-            const outputParagraphs = output.content.split('\n').map((line) =>
+          } else if ((output as any).fallbackText) {
+            // Rasterization failed — fall back to plaintext fallback rendering.
+            const outputParagraphs = (output as any).fallbackText.split('\n').map((line: string) =>
               new Paragraph({
                 children: [new TextRun({ text: sanitizeText(line), font: FONT_MONO, size: 20 })],
                 spacing: { line: 240 },
               }),
             );
             tableRows.push(titledRow('Hasil Output'), contentRow(outputParagraphs));
+          } else {
+            // Pure HTML with no fallback
+            tableRows.push(titledRow('Hasil Output'), contentRow([
+              new Paragraph({
+                children: [new TextRun({ text: '[Output HTML tidak dapat ditampilkan]', font: FONT_MONO, size: 20, italics: true, color: '888888' })],
+                spacing: { line: 240 },
+              })
+            ]));
           }
         } else if (output.type === 'text' && output.content.trim()) {
           const outputParagraphs = output.content.split('\n').map((line) =>
