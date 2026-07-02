@@ -87,14 +87,21 @@ export interface QAPair {
   a: string;
 }
 
+export interface ConclusionParagraph {
+  teks: string;
+  imageIndex?: number;
+  caption?: string;
+}
+
 export interface AIReportData {
   pendahuluan?: string;
   preTestAnswers: QAPair[];
   postTestAnswers: QAPair[];
   stepByStepNarrative: string;
-  codeAnalysis: string;
+  codeAnalysis: string | ConclusionParagraph[];
   alatDanBahan?: string[];
   cellAnalyses?: CellAnalysis[];
+  ulasanPraktikum?: string;
 }
 
 export interface ModuleEntry {
@@ -139,6 +146,7 @@ export interface ReportSession {
   preTest: string;
   modulContext: string;
   postTest: string;
+  ulasanPraktikum?: string;
   aiData?: AIReportData;
   // ---------------------------------------------------------------------------
   // Copilot agent upgrade — purely additive optional fields.

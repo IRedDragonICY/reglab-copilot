@@ -39,6 +39,17 @@ const ANALYSIS = (
 });
 
 describe('findUnanalyzedImages', () => {
+  const getClaimedIndexes = (analyses: CellAnalysis[] | undefined, section: 'implementasi'|'post_test') => {
+    const claims = new Set<number>();
+    if (!analyses) return claims;
+    for (const a of analyses) {
+      if (a.section === section && typeof a.imageIndex === 'number') {
+        claims.add(a.imageIndex);
+      }
+    }
+    return claims;
+  };
+
   it('returns no orphans when every image is claimed by a matching analysis', () => {
     const images = [IMG('a'), IMG('b'), IMG('c')];
     const analyses: CellAnalysis[] = [
@@ -46,13 +57,13 @@ describe('findUnanalyzedImages', () => {
       ANALYSIS(1, 'post_test'),
       ANALYSIS(2, 'post_test'),
     ];
-    const orphans = findUnanalyzedImages(images, analyses, 'post_test', 'Lembar Jawaban Post-Test');
+    const orphans = findUnanalyzedImages(images, getClaimedIndexes(analyses, 'post_test'), 'post_test', 'Lembar Jawaban Post-Test');
     expect(orphans).toEqual([]);
   });
 
   it('flags every image when no analyses exist (the regression case)', () => {
     const images = [IMG('a'), IMG('b')];
-    const orphans = findUnanalyzedImages(images, [], 'post_test', 'Lembar Jawaban Post-Test');
+    const orphans = findUnanalyzedImages(images, getClaimedIndexes([], 'post_test'), 'post_test', 'Lembar Jawaban Post-Test');
     expect(orphans).toHaveLength(2);
     expect(orphans.map((o) => o.index)).toEqual([0, 1]);
     for (const o of orphans) {
@@ -65,7 +76,7 @@ describe('findUnanalyzedImages', () => {
 
   it('flags every image when cellAnalyses is undefined (no AI run yet)', () => {
     const images = [IMG('a')];
-    const orphans = findUnanalyzedImages(images, undefined, 'implementasi', 'Implementasi');
+    const orphans = findUnanalyzedImages(images, getClaimedIndexes(undefined, 'implementasi'), 'implementasi', 'Implementasi');
     expect(orphans).toHaveLength(1);
     expect(orphans[0].warning).toContain('Implementasi');
   });
@@ -76,14 +87,14 @@ describe('findUnanalyzedImages', () => {
       ANALYSIS(1, 'post_test'),
       ANALYSIS(3, 'post_test'),
     ];
-    const orphans = findUnanalyzedImages(images, analyses, 'post_test', 'Lembar Jawaban Post-Test');
+    const orphans = findUnanalyzedImages(images, getClaimedIndexes(analyses, 'post_test'), 'post_test', 'Lembar Jawaban Post-Test');
     expect(orphans.map((o) => o.index)).toEqual([0, 2]);
   });
 
   it('matches on section so an implementasi analysis cannot claim a post_test image', () => {
     const images = [IMG('a')];
     const analyses: CellAnalysis[] = [ANALYSIS(0, 'implementasi')];
-    const orphans = findUnanalyzedImages(images, analyses, 'post_test', 'Lembar Jawaban Post-Test');
+    const orphans = findUnanalyzedImages(images, getClaimedIndexes(analyses, 'post_test'), 'post_test', 'Lembar Jawaban Post-Test');
     expect(orphans).toHaveLength(1);
     expect(orphans[0].index).toBe(0);
   });
@@ -93,7 +104,7 @@ describe('findUnanalyzedImages', () => {
     const analyses: CellAnalysis[] = [
       ANALYSIS(undefined, 'post_test', { caption: 'Floating analysis' }),
     ];
-    const orphans = findUnanalyzedImages(images, analyses, 'post_test', 'Lembar Jawaban Post-Test');
+    const orphans = findUnanalyzedImages(images, getClaimedIndexes(analyses, 'post_test'), 'post_test', 'Lembar Jawaban Post-Test');
     expect(orphans).toHaveLength(1);
   });
 
@@ -105,7 +116,7 @@ describe('findUnanalyzedImages', () => {
       // seen in production payloads from older sessions.
       { id: 'c' } as unknown as UserImage,
     ];
-    const orphans = findUnanalyzedImages(images, [], 'post_test', 'X');
+    const orphans = findUnanalyzedImages(images, getClaimedIndexes([], 'post_test'), 'post_test', 'X');
     expect(orphans.map((o) => o.index)).toEqual([0]);
   });
 
@@ -115,7 +126,7 @@ describe('findUnanalyzedImages', () => {
       { id: 'pdf', dataUrl: 'data:application/pdf;base64,AAA' },
       IMG('b'),
     ];
-    const orphans = findUnanalyzedImages(images, [], 'post_test', 'X');
+    const orphans = findUnanalyzedImages(images, getClaimedIndexes([], 'post_test'), 'post_test', 'X');
     expect(orphans.map((o) => o.index)).toEqual([0, 2]);
   });
 
@@ -126,7 +137,7 @@ describe('findUnanalyzedImages', () => {
       ANALYSIS(3, 'post_test'),
       ANALYSIS(1, 'post_test'),
     ];
-    const orphans = findUnanalyzedImages(images, analyses, 'post_test', 'Lembar Jawaban Post-Test');
+    const orphans = findUnanalyzedImages(images, getClaimedIndexes(analyses, 'post_test'), 'post_test', 'Lembar Jawaban Post-Test');
     expect(orphans.map((o) => o.index)).toEqual([0, 2, 4]);
   });
 
@@ -134,7 +145,7 @@ describe('findUnanalyzedImages', () => {
     const images = [IMG('a')];
     const orphans = findUnanalyzedImages(
       images,
-      [],
+      getClaimedIndexes([], 'implementasi'),
       'implementasi',
       'Lampiran Tambahan Implementasi',
     );
@@ -143,7 +154,7 @@ describe('findUnanalyzedImages', () => {
 
   it('warning text is actionable and mentions both Copilot review and manual edit', () => {
     const images = [IMG('a')];
-    const orphans = findUnanalyzedImages(images, [], 'post_test', 'Lembar Jawaban Post-Test');
+    const orphans = findUnanalyzedImages(images, getClaimedIndexes([], 'post_test'), 'post_test', 'Lembar Jawaban Post-Test');
     const w = orphans[0].warning.toLowerCase();
     expect(w).toContain('copilot');
     expect(w).toContain('manual');

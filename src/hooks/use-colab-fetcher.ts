@@ -33,6 +33,7 @@ export interface ColabFetcherArgs {
   postTest: string;
   onImplAdd: ColabAdder;
   onPostTestAdd: ColabAdder;
+  autoFetchColab?: boolean;
 }
 
 /**
@@ -83,7 +84,7 @@ async function fetchViaProxies(fileId: string): Promise<{ text: string; parsed: 
 }
 
 export function useColabFetcher(args: ColabFetcherArgs): void {
-  const { modulContext, postTest, onImplAdd, onPostTestAdd } = args;
+  const { modulContext, postTest, onImplAdd, onPostTestAdd, autoFetchColab = true } = args;
 
   // Keep the latest add-callbacks in refs so the effect does not re-bind
   // the listener on every render (the effect only depends on the URL
@@ -94,6 +95,8 @@ export function useColabFetcher(args: ColabFetcherArgs): void {
   onPostRef.current = onPostTestAdd;
 
   useEffect(() => {
+    if (!autoFetchColab) return;
+
     const hydrateFromCache = (link: string, isPostTest: boolean) => {
       const cached = colabCache.get(link);
       if (!cached) return;
@@ -154,5 +157,5 @@ export function useColabFetcher(args: ColabFetcherArgs): void {
     ptLinks.forEach((link) => {
       void fetchOne(link, true);
     });
-  }, [modulContext, postTest]);
+  }, [modulContext, postTest, autoFetchColab]);
 }

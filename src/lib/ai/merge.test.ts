@@ -110,24 +110,24 @@ describe('mergeReportData — stepByStepNarrative and codeAnalysis', () => {
       stepByStepNarrative: 'OLD',
       codeAnalysis: 'OLD-ANALYSIS',
     };
-    const incoming: RawToolArgs = {
-      praktikum: { langkah_kerja: 'NEW', analisis_hasil: 'NEW-ANALYSIS' },
+    const incoming: any = { // Use any to bypass TS inference here given the mock setup
+      praktikum: { langkah_kerja: 'NEW', analisis_hasil: [{ teks: 'NEW-ANALYSIS' }] },
     };
     const appended = mergeReportData(base, incoming, 'append');
     expect(appended.stepByStepNarrative).toBe('OLD\nNEW');
-    expect(appended.codeAnalysis).toBe('OLD-ANALYSIS\nNEW-ANALYSIS');
+    expect(appended.codeAnalysis).toEqual([{ teks: 'OLD-ANALYSIS' }, { teks: 'NEW-ANALYSIS' }]);
     const replaced = mergeReportData(base, incoming, 'replace');
     expect(replaced.stepByStepNarrative).toBe('NEW');
-    expect(replaced.codeAnalysis).toBe('NEW-ANALYSIS');
+    expect(replaced.codeAnalysis).toEqual([{ teks: 'NEW-ANALYSIS' }]);
   });
 
   it('kuliah analisis_hasil takes precedence when both kuliah and praktikum are present', () => {
-    const incoming: RawToolArgs = {
-      kuliah: { analisis_hasil: 'KULIAH' },
-      praktikum: { analisis_hasil: 'PRAKTIKUM' },
+    const incoming: any = {
+      kuliah: { analisis_hasil: [{ teks: 'KULIAH' }] },
+      praktikum: { analisis_hasil: [{ teks: 'PRAKTIKUM' }] },
     };
     const out = mergeReportData(empty, incoming, 'append');
-    expect(out.codeAnalysis).toBe('KULIAH');
+    expect(out.codeAnalysis).toEqual([{ teks: 'KULIAH' }]);
   });
 });
 

@@ -1,4 +1,4 @@
-import type { AIReportData, CellAnalysis, QAPair } from '@/lib/types';
+import type { AIReportData, CellAnalysis, QAPair, ConclusionParagraph } from '@/lib/types';
 
 /**
  * Raw structure returned by the Gemini `generate_report` function call.
@@ -11,14 +11,15 @@ import type { AIReportData, CellAnalysis, QAPair } from '@/lib/types';
 export interface RawToolArgs {
   kuliah?: {
     pendahuluan?: string;
-    analisis_hasil?: string;
+    analisis_hasil?: ConclusionParagraph[];
     cellAnalyses?: CellAnalysis[];
   };
   praktikum?: {
     alat_dan_bahan?: string[];
     langkah_kerja?: string;
-    analisis_hasil?: string;
+    analisis_hasil?: ConclusionParagraph[];
     cellAnalyses?: CellAnalysis[];
+    ulasan_praktikum?: string;
   };
   pre_test?: {
     questions?: string[];
@@ -95,12 +96,30 @@ export function mergeReportData(
 
   const incomingAnalysis = incoming.kuliah?.analisis_hasil ?? incoming.praktikum?.analisis_hasil;
   if (incomingAnalysis) {
-    merged.codeAnalysis = concatOrOverwrite(mode, current.codeAnalysis, incomingAnalysis);
+    if (mode === 'replace') {
+      merged.codeAnalysis = incomingAnalysis;
+    } else {
+      const currentArr = Array.isArray(current.codeAnalysis)
+        ? current.codeAnalysis
+        : (current.codeAnalysis ? [{ teks: current.codeAnalysis }] : []);
+      merged.codeAnalysis = [...currentArr, ...incomingAnalysis];
+    }
   }
 
   const incomingCells = incoming.kuliah?.cellAnalyses ?? incoming.praktikum?.cellAnalyses;
   if (incomingCells && incomingCells.length > 0) {
     merged.cellAnalyses = mergeCells(mode, current.cellAnalyses, incomingCells);
+  }
+
+  const incomingUlasan = incoming.praktikum?.ulasan_praktikum;
+  if (incomingUlasan) {
+    if (mode === 'replace') {
+      merged.ulasanPraktikum = incomingUlasan;
+    } else {
+      merged.ulasanPraktikum = current.ulasanPraktikum
+        ? `${current.ulasanPraktikum}\n${incomingUlasan}`
+        : incomingUlasan;
+    }
   }
 
   return merged;

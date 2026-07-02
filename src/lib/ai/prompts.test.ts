@@ -64,8 +64,8 @@ describe('buildGenerationPrompt — zero-orphan policy (REGRESSION)', () => {
     expect(prompt).toContain('ZERO-ORPHAN POLICY');
   });
 
-  it('requires every implementasi/post_test image to have a cellAnalyses entry with imageIndex', () => {
-    expect(prompt).toContain('WAJIB memiliki SATU entri `cellAnalyses`');
+  it('requires every implementasi/post_test image to have an entry with imageIndex', () => {
+    expect(prompt).toContain('WAJIB direlasikan melalui `imageIndex`');
     expect(prompt).toContain('imageIndex');
   });
 

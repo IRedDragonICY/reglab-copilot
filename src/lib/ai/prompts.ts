@@ -18,6 +18,7 @@ export interface GenerationPromptCtx {
   preTest: string;
   modulContext: string;
   postTest: string;
+  ulasanPraktikum?: string;
   notebookPromptData: string;
 }
 
@@ -37,18 +38,21 @@ export function buildGenerationPrompt(ctx: GenerationPromptCtx): string {
            - Pisahkan mana yang merupakan SOAL TEKS, mana yang merupakan HASIL IMPLEMENTASI (Screenshot Program/Grafik).
            - Jika gambar adalah Soal (misal teks Notepad/Soal PDF): Ekstrak teks pertanyaannya secara lengkap ke dalam field \`questions\` (baik di \`pre_test\` maupun \`post_test\` sesuai kategorinya). JANGAN masukkan gambar soal ke \`cellAnalyses\`.
            - Jika gambar adalah Hasil Implementasi/Jawaban: Masukkan ke dalam \`cellAnalyses\`, pastikan Anda memberikan deskripsi detail/analisis tajam di \`explanation\`.
+           - KHUSUS LAPORAN KULIAH (BUKAN PRAKTIKUM): Jika gambar adalah Grafik Evaluasi / Visualisasi / Hasil Analisis Akhir (seperti *Confusion Matrix*, *Word Cloud*, dsb), gambar tersebut WAJIB dimasukkan ke dalam array \`analisis_hasil\` (Bab III Kesimpulan) melalui relasi \`imageIndex\`, dan JANGAN BIKIN entri di \`cellAnalyses\` untuk gambar tersebut.
+           - KHUSUS LAPORAN PRAKTIKUM: Anda tetap BOLEH memasukkan Grafik Evaluasi di \`analisis_hasil\` atau \`cellAnalyses\`, namun DILARANG menulis narasi kesimpulan tentang grafik tanpa menyertakan \`imageIndex\` grafiknya jika gambar tersebut memang ada.
         3. RELATIVE IMAGE INDEXING (PENTING!):
            Setiap gambar yang dilampirkan akan diberi label seperti "[Relative Index: 0]", "[Relative Index: 1]", dst sesuai kategori uploadnya. 
            Anda WAJIB mengisi field \`imageIndex\` pada \`cellAnalyses\` menggunakan angka dari "[Relative Index: X]" tersebut secara tepat agar dokumen tidak salah meletakkan gambar!
-        4. CHRONOLOGICAL SORTING: Susun array \`cellAnalyses\` secara KRONOLOGIS dari awal hingga akhir (misal: Visualisasi 1 harus di array atas, Visualisasi 2 di bawahnya, dsb), meskipun urutan upload dari user berantakan!
+        4. CHRONOLOGICAL SORTING: Gambar yang dikirimkan ke Anda biasanya sudah disusun berurutan secara logis dari Langkah 1 hingga akhir. Pertahankan urutan asli tersebut sebisa mungkin di array \`cellAnalyses\`, KECUALI jika Anda menemukan anomali urutan yang sangat jelas salah (misal Visualisasi 3 dikirim sebelum Visualisasi 1).
         5. "Langkah Kerja" (stepByStepNarrative) wajib menggunakan format Markdown yang rapi.
         6. Tone: Gunakan KALIMAT PASIF formal secara dominan ("Dataset dibaca menggunakan...", bukan "Saya membaca...").
         7. DILARANG KERAS menggunakan teks template/generic seperti "Implementasi Kode" atau "Tabel/Output DataFrame". Berikan penamaan caption (caption & tableCaption) yang SANGAT SPESIFIK dan DINAMIS untuk setiap baris kode/gambar (misal: "Proses Cleansing Data Missing Values", "Tabel Distribusi Kategori Produk"). Setiap sel kode HARUS memiliki \`caption\`! DILARANG MENGOSONGKANNYA!
 
         ZERO-ORPHAN POLICY (PALING KRITIS — JANGAN DILANGGAR):
-        - Setiap gambar bertipe HASIL IMPLEMENTASI/JAWABAN (kategori \`implementasi\` atau \`post_test\`) WAJIB memiliki SATU entri \`cellAnalyses\` yang merujuk ke gambar tersebut via \`imageIndex\`.
-        - DILARANG mengirimkan gambar ke output tanpa mengisi entri \`cellAnalyses\`-nya. Gambar tanpa \`cellAnalyses\` akan muncul di laporan sebagai "Penjelasan Belum Tersedia" yang merupakan kegagalan tugas Anda.
-        - Sebelum memanggil \`generate_report\` di batch terakhir, lakukan self-check: hitung jumlah gambar bertipe implementasi+post_test yang dikirim user, lalu pastikan jumlah entri \`cellAnalyses\` dengan \`imageIndex\` terisi minimal sama dengan jumlah gambar tersebut.
+        - Setiap gambar bertipe HASIL IMPLEMENTASI/JAWABAN (kategori \`implementasi\` atau \`post_test\`) WAJIB direlasikan melalui \`imageIndex\`, entah itu ke dalam \`cellAnalyses\` ATAUPUN \`analisis_hasil\` (khusus grafik evaluasi).
+        - DILARANG mengirimkan gambar ke output tanpa merelasikannya. Gambar tanpa relasi logis akan berstatus yatim piatu ("Penjelasan Belum Tersedia") yang merupakan kegagalan mutlak tugas Anda.
+        - PENTING UNTUK POST-TEST: Meskipun Anda sudah menjawab esai/soal post_test di object \`answers\`, Anda TETAP WAJIB membuat entri di \`cellAnalyses\` (dengan \`section: 'post_test'\`) khusus untuk menjelaskan baris kode / perubahan teknis apa yang Anda modifikasi pada screenshot tersebut. Sadarilah konteks praktikum sebelumnya! Jelaskan secara natural bagian kode mana yang "diubah" dari langkah praktikum untuk menyelesaikan soal post-test ini (misal: "Untuk menyelesaikan tugas ini, parameter \\\`numDisparities\\\` yang sebelumnya bernilai 16 pada langkah praktikum diubah menjadi 80..."). Jangan hanya menjawab di \`answers\` lalu meninggalkan gambar post-test tanpa penjelasan komparatif di \`cellAnalyses\`.
+        - Sebelum memanggil \`generate_report\` di batch terakhir, lakukan self-check: pastikan setiap gambar implementasi+post_test yang dikirim user sudah direlasikan secara utuh.
         - Untuk gambar Post-Test: \`section\` HARUS \`'post_test'\`. Untuk gambar Implementasi: \`section\` HARUS \`'implementasi'\`. Jangan tertukar.
 
         PENJELASAN BLOK KODE NOTEBOOK (WAJIB JIKA ADA .IPYNB):
@@ -62,15 +66,17 @@ export function buildGenerationPrompt(ctx: GenerationPromptCtx): string {
         - Apa yang BERUBAH dari step sebelumnya (misal: "warna bar dikustomisasi via properti \`fill\` pada array sample sehingga setiap bahasa memiliki warna unik dari biru→cyan", "urutan bar berubah dari default → ascending setelah dropdown Sort by dipilih ke 'Ascending'").
         - Untuk Post-Test, kaitkan setiap screenshot ke nomor soal Post-Test tertentu dan jelaskan bagian mana dari soal yang dijawab oleh screenshot tersebut.
 
-        ANTI AI-SLOP (DILARANG KERAS):
-        Jangan gunakan kalimat pembuka generic / boilerplate. Daftar frase yang DILARANG dipakai sebagai pembuka:
-        - "Pada gambar di atas dapat dilihat..."
-        - "Seperti yang terlihat pada gambar..."
-        - "Berdasarkan tampilan di atas..."
-        - "Gambar di atas menunjukkan..."
-        - "Dapat disimpulkan bahwa..."
-        - "Output dari kode di atas adalah..."
-        Sebagai gantinya, langsung sebut detail konkret yang teramati di screenshot (file, baris, identifier, warna, nilai, urutan), atau sebut alur logika kodenya. Tone laporan harus terdengar NATURAL seperti tulisan mahasiswa yang benar-benar mengerjakan, bukan teks template.
+        ANTI AI-SLOP & LANGUAGE RULES (DILARANG KERAS):
+        1. Jangan gunakan kalimat pembuka generic / boilerplate. Daftar frase yang DILARANG dipakai sebagai pembuka:
+           - "Pada gambar di atas dapat dilihat..."
+           - "Seperti yang terlihat pada gambar..."
+           - "Berdasarkan tampilan di atas..."
+           - "Gambar di atas menunjukkan..."
+           - "Dapat disimpulkan bahwa..."
+           - "Output dari kode di atas adalah..."
+           Sebagai gantinya, langsung sebut detail konkret yang teramati di screenshot (file, baris, identifier, warna, nilai, urutan), atau sebut alur logika kodenya. Tone laporan harus terdengar NATURAL seperti tulisan mahasiswa yang benar-benar mengerjakan, bukan teks template.
+        2. NATURAL TECHNICAL TRANSLATIONS: DILARANG KERAS menerjemahkan istilah baku IT / Data Science ke dalam bahasa Indonesia secara harfiah. Contoh yang DILARANG: "Matriks Kebingungan" (Wajib: "Confusion Matrix"), "Hutan Acak" (Wajib: "Random Forest"), "Pohon Keputusan" (Wajib: "Decision Tree"). Gunakan istilah Bahasa Inggris aslinya untuk hal-hal teknis.
+        3. FORMATTING ISTILAH ASING: Sesuai kaidah penulisan jurnal ilmiah bahasa Indonesia, semua istilah bahasa Inggris/asing WAJIB dicetak miring (italic). Contoh: "*Confusion Matrix*", "*Early Stopping*", "*Epoch*", "*Hyperparameter Tuning*". Gunakan format markdown \`*teks*\` atau \`_teks_\` untuk memiringkan istilah tersebut.
 
         MULTI-TURN BATCH PROCESSING (CRITICAL):
         TOTAL GAMBAR/VISUAL YANG DIKIRIMKAN ADALAH: ${ctx.totalImages} gambar.
@@ -87,6 +93,7 @@ export function buildGenerationPrompt(ctx: GenerationPromptCtx): string {
         Pre-Test Questions: ${ctx.preTest}
         Modul Context/Goals: ${ctx.modulContext}
         Post-Test Questions: ${ctx.postTest}
+        Ulasan Praktikum (Raw Input dari User): ${ctx.ulasanPraktikum || '-'}
 
         Notebook Data (JSON Extracted Cells):
         ${ctx.notebookPromptData}
@@ -111,7 +118,7 @@ You MUST output the new, updated structured data using the \`generate_report\` t
 }
 
 export const GENERATION_SYSTEM_INSTRUCTION =
-  'You act as an autonomous AI analyst. Read images, sort them chronologically, extract text from questions, and map visualizations correctly using relative indexes in multi-turn batches. Every implementation / post-test screenshot must have a corresponding cellAnalyses entry with a natural-language Indonesian explanation grounded in concrete details visible in the screenshot. Never use generic boilerplate openers.';
+  'You act as an autonomous AI analyst. Read images, sort them chronologically, extract text from questions, and map visualizations correctly using relative indexes in multi-turn batches. Every implementation / post-test screenshot MUST have a corresponding cellAnalyses entry (even if you answered the post-test question in the `answers` array) with a natural-language Indonesian explanation grounded in concrete details visible in the screenshot. Never use generic boilerplate openers. Keep technical terms in their original English (e.g., "Confusion Matrix" instead of "Matriks Kebingungan").';
 
 export const EDIT_SYSTEM_INSTRUCTION =
   'You act as an editor that modifies data based on user input.';

@@ -77,8 +77,28 @@ describe('AI function declarations — byte stability', () => {
                   "type": "ARRAY"
                 },
                 "analisis_hasil": {
-                  "description": "Analisis keseluruhan dari implementasi kode hasil praktikum",
-                  "type": "STRING"
+                  "description": "Daftar paragraf analisis hasil / kesimpulan. Tiap elemen objek adalah satu paragraf, dan Anda bisa secara dinamis menyatukan atau memanggil lampiran grafik (jika relevan) menggunakan imageIndex.",
+                  "items": {
+                    "properties": {
+                      "caption": {
+                        "description": "Caption gambar jika menampilkan image (contoh: \\"Grafik Confusion Matrix\\").",
+                        "type": "STRING"
+                      },
+                      "imageIndex": {
+                        "description": "Index grafik/visualisasi (0-based) dari daftar lampiran yang sedang Anda bahas. JANGAN diisi jika Anda tidak membahas gambar tertentu dalam paragraf ini!",
+                        "type": "NUMBER"
+                      },
+                      "teks": {
+                        "description": "Paragraf kesimpulan atau analisis. WAJIB menggunakan bahasa profesional. Istilah bahasa Inggris/asing WAJIB dicetak miring (contoh: \\"*Confusion Matrix*\\").",
+                        "type": "STRING"
+                      }
+                    },
+                    "required": [
+                      "teks"
+                    ],
+                    "type": "OBJECT"
+                  },
+                  "type": "ARRAY"
                 },
                 "cellAnalyses": {
                   "description": "Penjelasan/Analisis ringkas untuk setiap block/cell (baik CODE maupun MARKDOWN) implementasi pada notebook ATAU gambar screenshot langkah kerja. Susun secara kronologis berurutan.",
@@ -93,7 +113,7 @@ describe('AI function declarations — byte stability', () => {
                         "type": "NUMBER"
                       },
                       "explanation": {
-                        "description": "Penjelasan natural berbahasa Indonesia (kalimat pasif, gaya laporan mahasiswa) untuk setiap screenshot/sel. WAJIB minimal 2 kalimat dan menyebut detail konkret yang TERLIHAT di gambar: file/tab editor aktif, nomor baris yang ter-highlight, identifier kode (fungsi/variabel/selector D3/properti CSS), output UI yang dihasilkan (warna, urutan, nilai dropdown), dan perubahan dari step sebelumnya. DILARANG menggunakan pembuka generic seperti \\"Pada gambar di atas...\\", \\"Seperti yang terlihat...\\", \\"Berdasarkan tampilan...\\", \\"Gambar di atas menunjukkan...\\". Langsung sebut observasi konkret.",
+                        "description": "Penjelasan natural berbahasa Indonesia (kalimat pasif, gaya laporan mahasiswa) untuk setiap screenshot/sel. WAJIB minimal 2 kalimat dan menyebut detail konkret yang TERLIHAT di gambar: file/tab editor aktif, nomor baris yang ter-highlight, identifier kode (fungsi/variabel/selector D3/properti CSS), output UI yang dihasilkan (warna, urutan, nilai dropdown), dan perubahan dari step sebelumnya. DILARANG menggunakan pembuka generic seperti \\"Pada gambar di atas...\\", \\"Seperti yang terlihat...\\", \\"Berdasarkan tampilan...\\", \\"Gambar di atas menunjukkan...\\". Langsung sebut observasi konkret. Khusus post_test jelaskan baris mana di ipynb / kode yang diubah untuk menyelesaikan tantangan/soal tersebut (jangan hanya berikan jawaban).",
                         "type": "STRING"
                       },
                       "imageIndex": {
@@ -127,13 +147,18 @@ describe('AI function declarations — byte stability', () => {
                 "langkah_kerja": {
                   "description": "Penjelasan naratif (narasi dengan format markdown list agar rapi dan bagus) step-by-step implementasinya",
                   "type": "STRING"
+                },
+                "ulasan_praktikum": {
+                  "description": "Ulasan/Feedback pelaksanaan praktikum berupa perasaan, kendala/kesulitan, atau saran. Jika user tidak menyediakan teks ulasan, draft secara natural (berikan feedback generik positif/konstruktif, minimal 1 kalimat panjang).",
+                  "type": "STRING"
                 }
               },
               "required": [
                 "alat_dan_bahan",
                 "langkah_kerja",
                 "analisis_hasil",
-                "cellAnalyses"
+                "cellAnalyses",
+                "ulasan_praktikum"
               ],
               "type": "OBJECT"
             },

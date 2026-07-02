@@ -180,6 +180,8 @@ interface AppState {
   setGeminiApiKey: (key: string) => void;
   globalFileNameFormat: string;
   setGlobalFileNameFormat: (format: string) => void;
+  autoFetchColab: boolean;
+  setAutoFetchColab: (val: boolean) => void;
 
   /** Last-selected Gemini model display name. Persisted across reloads. */
   selectedModelName: string;
@@ -512,6 +514,9 @@ export const useAppStore = create<AppState>()(
       globalFileNameFormat: '{nim}_{nama}_{pertemuan}_{matkul}',
       setGlobalFileNameFormat: (format) => set({ globalFileNameFormat: format }),
 
+      autoFetchColab: true,
+      setAutoFetchColab: (val) => set({ autoFetchColab: val }),
+
       // App-wide last-selected Gemini model. Persisted top-level so a
       // page reload restores the user's pick (Req: model selection
       // should survive refresh). Default mirrors `AVAILABLE_MODELS[1]`
@@ -568,6 +573,7 @@ export const useAppStore = create<AppState>()(
         manualProgress: state.manualProgress,
         geminiApiKey: state.geminiApiKey,
         globalFileNameFormat: state.globalFileNameFormat,
+        autoFetchColab: state.autoFetchColab,
         selectedModelName: state.selectedModelName,
         copilotSettings: state.copilotSettings,
         // Tab persistence — refreshing the page must keep open tabs

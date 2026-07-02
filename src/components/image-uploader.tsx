@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useState, useRef } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { UserImage } from '@/lib/types';
 import { Button } from '@/components/ui/button';
-import { X, FileText, Loader2 } from 'lucide-react';
+import { X, FileText, Loader2, Eye } from 'lucide-react';
 
 // `unpdf` is loaded lazily — only when a user actually drops a PDF —
 // so the heavy pdf.js dependency never appears in the initial chunk.
@@ -21,6 +21,7 @@ interface ImageUploaderProps {
 
 export function ImageUploader({ images, onChange, label }: ImageUploaderProps) {
   const processingRef = useRef<Set<string>>(new Set());
+  const [viewImage, setViewImage] = useState<string | null>(null);
 
   const convertPdfToImages = useCallback(async (dataUrl: string): Promise<string[]> => {
     try {
@@ -120,7 +121,12 @@ export function ImageUploader({ images, onChange, label }: ImageUploaderProps) {
   }, [images, onChange, convertPdfToImages]);
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
-    const nestedResults = await Promise.all(acceptedFiles.map(file => generateThumbnails(file)));
+    // Sort files by name to ensure sequential screenshots (e.g. Screenshot 1, Screenshot 2) stay in order
+    const sortedFiles = [...acceptedFiles].sort((a, b) => 
+      a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' })
+    );
+
+    const nestedResults = await Promise.all(sortedFiles.map(file => generateThumbnails(file)));
     const flatResults = nestedResults.flat().map(dataUrl => ({
       id: Math.random().toString(36).substring(7),
       dataUrl
@@ -155,6 +161,7 @@ export function ImageUploader({ images, onChange, label }: ImageUploaderProps) {
     }
 
     if (pendingFiles.length > 0) {
+        pendingFiles.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' }));
         const nestedResults = await Promise.all(pendingFiles.map(file => generateThumbnails(file)));
         const flatResults = nestedResults.flat().map(dataUrl => ({
           id: Math.random().toString(36).substring(7),
@@ -183,24 +190,46 @@ export function ImageUploader({ images, onChange, label }: ImageUploaderProps) {
         <div className="flex flex-wrap gap-3 mt-3">
           {images.map((img) => (
             <div key={img.id} className="relative group border border-gray-500/20 rounded-md p-1 bg-[#1a1a1a] overflow-hidden">
-              <div className="h-20 w-auto min-w-20 bg-black/20 flex items-center justify-center rounded overflow-hidden">
+              <div className="h-20 w-auto min-w-20 bg-black/20 flex items-center justify-center rounded overflow-hidden cursor-pointer" onClick={() => !img.dataUrl?.startsWith('data:application/pdf') && setViewImage(img.dataUrl)}>
                 {img.dataUrl?.startsWith('data:application/pdf') ? (
                   <div className="flex flex-col items-center gap-1">
                     <Loader2 className="w-5 h-5 text-blue-500 animate-spin" />
                     <span className="text-[10px] text-gray-400">Memproses...</span>
                   </div>
                 ) : (
-                  <img src={img.dataUrl} alt="uploaded" className="h-20 w-auto object-contain transition-transform group-hover:scale-105" />
+                  <>
+                    <img src={img.dataUrl} alt="uploaded" className="h-20 w-auto object-contain transition-transform group-hover:scale-105 group-hover:opacity-70" />
+                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                      <Eye className="text-white w-6 h-6 drop-shadow-md" />
+                    </div>
+                  </>
                 )}
               </div>
               <button 
-                onClick={() => removeImage(img.id)}
-                className="absolute top-1 right-1 bg-red-500 shadow-lg text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-all hover:bg-red-600 active:scale-95"
+                onClick={(e) => { e.stopPropagation(); removeImage(img.id); }}
+                className="absolute top-1 right-1 bg-red-500 shadow-lg text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-all hover:bg-red-600 active:scale-95 z-10"
               >
                 <X size={12} />
               </button>
             </div>
           ))}
+        </div>
+      )}
+
+      {viewImage && (
+        <div 
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" 
+          onClick={() => setViewImage(null)}
+        >
+          <div className="relative max-w-full max-h-full flex items-center justify-center animate-in fade-in zoom-in duration-200">
+            <img src={viewImage} className="max-w-[90vw] max-h-[90vh] object-contain rounded-md shadow-2xl" />
+            <button 
+              className="absolute top-4 right-4 bg-black/50 text-white rounded-full p-2 hover:bg-black/70 transition-colors"
+              onClick={(e) => { e.stopPropagation(); setViewImage(null); }}
+            >
+              <X size={20} />
+            </button>
+          </div>
         </div>
       )}
     </div>

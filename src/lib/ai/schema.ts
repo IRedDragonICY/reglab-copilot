@@ -42,7 +42,7 @@ const cellAnalysisItem = {
     notebookIndex: { type: Type.NUMBER, description: 'Index file notebook (0-based) jika terdapat lebih dari satu notebook yang diupload. WAJIB diisi! Jika bukan notebook (hanya gambar saja), isi dengan -1.' },
     cellIndex: { type: Type.NUMBER, description: 'Index sel notebook di dalam file tersebut. WAJIB diisi! Jika bukan notebook (hanya gambar saja), isi dengan -1.' },
     imageIndex: { type: Type.NUMBER, description: 'Index gambar lampiran (0-based) dari daftar yang diberikan. WAJIB diisi untuk setiap screenshot implementasi atau post_test agar gambar terhubung ke entri ini. Tanpa imageIndex, gambar akan muncul tanpa penjelasan di laporan.' },
-    explanation: { type: Type.STRING, description: 'Penjelasan natural berbahasa Indonesia (kalimat pasif, gaya laporan mahasiswa) untuk setiap screenshot/sel. WAJIB minimal 2 kalimat dan menyebut detail konkret yang TERLIHAT di gambar: file/tab editor aktif, nomor baris yang ter-highlight, identifier kode (fungsi/variabel/selector D3/properti CSS), output UI yang dihasilkan (warna, urutan, nilai dropdown), dan perubahan dari step sebelumnya. DILARANG menggunakan pembuka generic seperti "Pada gambar di atas...", "Seperti yang terlihat...", "Berdasarkan tampilan...", "Gambar di atas menunjukkan...". Langsung sebut observasi konkret.' },
+    explanation: { type: Type.STRING, description: 'Penjelasan natural berbahasa Indonesia (kalimat pasif, gaya laporan mahasiswa) untuk setiap screenshot/sel. WAJIB minimal 2 kalimat dan menyebut detail konkret yang TERLIHAT di gambar: file/tab editor aktif, nomor baris yang ter-highlight, identifier kode (fungsi/variabel/selector D3/properti CSS), output UI yang dihasilkan (warna, urutan, nilai dropdown), dan perubahan dari step sebelumnya. DILARANG menggunakan pembuka generic seperti "Pada gambar di atas...", "Seperti yang terlihat...", "Berdasarkan tampilan...", "Gambar di atas menunjukkan...". Langsung sebut observasi konkret. Khusus post_test jelaskan baris mana di ipynb / kode yang diubah untuk menyelesaikan tantangan/soal tersebut (jangan hanya berikan jawaban).' },
     caption: { type: Type.STRING, description: 'Caption dinamis & spesifik untuk judul potongan kode. CONTOH: "Import Library Pandas", "Proses Cleansing Data Missing Value". DILARANG KERAS menggunakan kata generic/template seperti "Implementasi Kode"!' },
     tableCaption: { type: Type.STRING, description: 'Caption dinamis khusus untuk output visual (tabel DataFrame/Grafik/Plot). CONTOH: "Tabel Distribusi Kategori Produk", "Grafik Elbow Method". DILARANG KERAS menggunakan kata generic seperti "Tabel/Output DataFrame"!' },
     section: { type: Type.STRING, description: "Wajib diisi 'implementasi' or 'post_test'. Penting! Nilainya harus persis salah satu dari list ini." }
@@ -89,6 +89,22 @@ const kuliahCellAnalysesArray = {
  * (the snapshot test guards the byte-for-byte equivalence with the
  * pre-refactor output).
  */
+const conclusionItem = {
+    type: Type.OBJECT,
+    properties: {
+      teks: { type: Type.STRING, description: 'Paragraf kesimpulan atau analisis. WAJIB menggunakan bahasa profesional. Istilah bahasa Inggris/asing WAJIB dicetak miring (contoh: "*Confusion Matrix*").' },
+      imageIndex: { type: Type.NUMBER, description: 'Index grafik/visualisasi (0-based) dari daftar lampiran yang sedang Anda bahas. JANGAN diisi jika Anda tidak membahas gambar tertentu dalam paragraf ini!' },
+      caption: { type: Type.STRING, description: 'Caption gambar jika menampilkan image (contoh: "Grafik Confusion Matrix").' }
+    },
+    required: ['teks']
+};
+
+const conclusionArray = {
+  type: Type.ARRAY,
+  description: 'Daftar paragraf analisis hasil / kesimpulan. Tiap elemen objek adalah satu paragraf, dan Anda bisa secara dinamis menyatukan atau memanggil lampiran grafik (jika relevan) menggunakan imageIndex.',
+  items: conclusionItem
+};
+
 export const generateReportDeclaration = {
   name: 'generate_report',
   description: 'Extrack data format untuk laporan praktikum',
@@ -109,10 +125,11 @@ export const generateReportDeclaration = {
         properties: {
           alat_dan_bahan: { type: Type.ARRAY, description: 'Daftar perangkat (Keras, Lunak, Library, Bahasa Pemrograman dll). Contoh array: ["1. Perangkat Keras: PC Lab", "2. Perangkat Lunak: Browser", "3. Bahasa Pemrograman: Python", "4. Library: Pandas, Numpy"]', items: { type: Type.STRING } },
           langkah_kerja: { type: Type.STRING, description: 'Penjelasan naratif (narasi dengan format markdown list agar rapi dan bagus) step-by-step implementasinya' },
-          analisis_hasil: { type: Type.STRING, description: 'Analisis keseluruhan dari implementasi kode hasil praktikum' },
+          analisis_hasil: conclusionArray,
           cellAnalyses: cellAnalysesArray,
+          ulasan_praktikum: { type: Type.STRING, description: 'Ulasan/Feedback pelaksanaan praktikum berupa perasaan, kendala/kesulitan, atau saran. Jika user tidak menyediakan teks ulasan, draft secara natural (berikan feedback generik positif/konstruktif, minimal 1 kalimat panjang).' },
         },
-        required: ['alat_dan_bahan', 'langkah_kerja', 'analisis_hasil', 'cellAnalyses'],
+        required: ['alat_dan_bahan', 'langkah_kerja', 'analisis_hasil', 'cellAnalyses', 'ulasan_praktikum'],
       },
       post_test: {
         type: Type.OBJECT,
@@ -164,7 +181,7 @@ export const generateKuliahReportDeclaration = {
         type: Type.OBJECT,
         properties: {
           pendahuluan: { type: Type.STRING, description: 'Bab Pendahuluan yang memuat latar belakang kajian atau tugas secara komprehensif. Susun narasinya dengan rapi.' },
-          analisis_hasil: { type: Type.STRING, description: 'Bab Kesimpulan dan Analisis keseluruhan dari implementasi kode laporan kuliah' },
+          analisis_hasil: conclusionArray,
           cellAnalyses: kuliahCellAnalysesArray,
         },
         required: ['pendahuluan', 'analisis_hasil', 'cellAnalyses'],

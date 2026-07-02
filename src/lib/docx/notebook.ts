@@ -331,19 +331,10 @@ export interface UnanalyzedImage {
  */
 export function findUnanalyzedImages(
   images: UserImage[],
-  cellAnalyses: CellAnalysis[] | undefined,
+  claimedIndexes: Set<number>,
   section: 'implementasi' | 'post_test',
   bucketCaption: string,
 ): UnanalyzedImage[] {
-  const claimedIndexes = new Set<number>();
-  if (cellAnalyses) {
-    for (const a of cellAnalyses) {
-      if (a.section === section && typeof a.imageIndex === 'number') {
-        claimedIndexes.add(a.imageIndex);
-      }
-    }
-  }
-
   const orphans: UnanalyzedImage[] = [];
   for (let i = 0; i < images.length; i++) {
     const img = images[i];

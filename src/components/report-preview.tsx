@@ -391,6 +391,14 @@ function ReportPreviewInner({
     }
   });
 
+  if (Array.isArray(cAnalysis)) {
+    cAnalysis.forEach(item => {
+      if (item.imageIndex !== undefined) {
+        usedImplImageIndexes.add(item.imageIndex);
+      }
+    });
+  }
+
   const finalUnusedImplImages = implImages.filter((_, i) => !usedImplImageIndexes.has(i));
   const finalUnusedPostTestImages = postTestImages.filter((_, i) => !usedPostTestImageIndexes.has(i));
 
@@ -608,17 +616,58 @@ function ReportPreviewInner({
           ) : (
             <h2 id="analisis-hasil" className="font-bold text-lg mt-8 scroll-mt-8 text-black outline-none" contentEditable suppressContentEditableWarning>D. Analisis Hasil:</h2>
           )}
-          <div 
-            className={`${metadata.reportType === 'kuliah' ? 'mt-8 ' : 'pl-4 '}prose prose-sm max-w-none text-gray-900 text-justify outline-none border border-transparent focus:border-gray-300 focus:bg-gray-50 p-2 rounded transition-all`} 
-            contentEditable suppressContentEditableWarning
-            onBlur={(e) => {
-              if (onAiDataChange && aiData) {
-                onAiDataChange({ ...aiData, codeAnalysis: e.currentTarget.innerText });
-              }
-            }}
-          >
-            <MarkdownBlock content={cAnalysis} />
-          </div>
+          {Array.isArray(cAnalysis) ? (
+            <div className={`${metadata.reportType === 'kuliah' ? 'mt-8 ' : 'pl-4 '}space-y-6 text-gray-900 text-justify outline-none border border-transparent focus:border-gray-300 focus:bg-gray-50 p-2 rounded transition-all`}>
+              {cAnalysis.map((item, idx) => {
+                const img = item.imageIndex !== undefined ? implImages[item.imageIndex] : null;
+                const chapterPrefix = metadata.reportType === 'kuliah' ? 'III' : 'II';
+                return (
+                  <div key={idx} className="space-y-4">
+                    {img && (
+                      <div className="mb-4">
+                        {item.caption && <h3 className="font-bold mb-2">{item.caption.replace(/['"]/g, '')}</h3>}
+                        <PreviewImage src={img.dataUrl} caption={`Gambar ${chapterPrefix}.${nextImgIdxII++} ${item.caption || 'Output Visual'}`} />
+                      </div>
+                    )}
+                    {item.teks && (
+                      <div className="prose prose-sm max-w-none text-gray-900 text-justify">
+                        <MarkdownBlock content={item.teks} />
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div 
+              className={`${metadata.reportType === 'kuliah' ? 'mt-8 ' : 'pl-4 '}prose prose-sm max-w-none text-gray-900 text-justify outline-none border border-transparent focus:border-gray-300 focus:bg-gray-50 p-2 rounded transition-all`} 
+              contentEditable suppressContentEditableWarning
+              onBlur={(e) => {
+                if (onAiDataChange && aiData) {
+                  onAiDataChange({ ...aiData, codeAnalysis: e.currentTarget.innerText });
+                }
+              }}
+            >
+              <MarkdownBlock content={typeof cAnalysis === 'string' ? cAnalysis : ''} />
+            </div>
+          )}
+
+          {metadata.reportType !== 'kuliah' && (
+            <div className="mt-8">
+              <h2 id="ulasan-praktikum" className="font-bold text-lg scroll-mt-8 text-black outline-none" contentEditable suppressContentEditableWarning>E. Ulasan Praktikum:</h2>
+              <div 
+                className="pl-4 mt-4 prose prose-sm max-w-none text-gray-900 text-justify outline-none border border-transparent focus:border-gray-300 focus:bg-gray-50 p-2 rounded transition-all"
+                contentEditable suppressContentEditableWarning
+                onBlur={(e) => {
+                  if (onAiDataChange && aiData) {
+                    onAiDataChange({ ...aiData, ulasanPraktikum: e.currentTarget.innerText });
+                  }
+                }}
+              >
+                <MarkdownBlock content={aiData?.ulasanPraktikum || 'Silakan tulis ulasan praktikum Anda di sini...'} />
+              </div>
+            </div>
+          )}
         </div>
       </PreviewPage>
 

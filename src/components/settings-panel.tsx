@@ -41,6 +41,8 @@ interface SettingsPanelProps {
   setPostTest: (val: string) => void;
   postTestImages: UserImage[];
   setPostTestImages: (imgs: UserImage[]) => void;
+  ulasanPraktikum: string;
+  setUlasanPraktikum: (val: string) => void;
   getRootPropsPt: <T extends DropzoneRootProps>(props?: T) => T;
   getInputPropsPt: <T extends DropzoneInputProps>(props?: T) => T;
   isDragActivePt: boolean;
@@ -62,7 +64,7 @@ export function SettingsPanel({
   getRootProps, getInputProps, isDragActive, notebookFiles, setNotebookFiles, parsedNotebooks, setParsedNotebooks, setGeneratedDocxBlob,
   preTest, setPreTest, handlePasteToUploader, preTestImages, setPreTestImages,
   modulContext, setModulContext, implImages, setImplImages,
-  postTest, setPostTest, postTestImages, setPostTestImages,
+  postTest, setPostTest, postTestImages, setPostTestImages, ulasanPraktikum, setUlasanPraktikum,
   getRootPropsPt, getInputPropsPt, isDragActivePt, postTestNotebookFiles, setPostTestNotebookFiles, postTestParsedNotebooks, setPostTestParsedNotebooks,
   saveCurrentSession, handleSaveCustomDate, handleGenerate, aiPreviewData, isGenerating
 }: SettingsPanelProps) {
@@ -118,9 +120,20 @@ export function SettingsPanel({
       </div>
 
       <div className="space-y-4 pt-4 border-t border-[#333]">
-        <h3 className="font-semibold text-gray-100 flex items-center gap-2">
-          <BookOpen className="w-4 h-4 text-purple-400" /> Konteks Praktikum / Tugas
-        </h3>
+        <div className="flex items-center justify-between">
+          <h3 className="font-semibold text-gray-100 flex items-center gap-2">
+            <BookOpen className="w-4 h-4 text-purple-400" /> Konteks Praktikum / Tugas
+          </h3>
+          <label className="flex items-center gap-2 cursor-pointer text-xs text-gray-400 hover:text-gray-200" title="Otomatis unduh notebook dari link Google Colab yang dimasukkan pada Context/Post-test">
+            <input 
+              type="checkbox" 
+              checked={store.autoFetchColab}
+              onChange={(e) => store.setAutoFetchColab(e.target.checked)}
+              className="accent-blue-500 rounded bg-[#242424] border-[#444]"
+            />
+            Auto-fetch Colab (.ipynb)
+          </label>
+        </div>
         
         <div className="space-y-2">
           <Label className="text-[#a0a0a0]">Jenis Laporan</Label>
@@ -422,6 +435,18 @@ export function SettingsPanel({
               </div>
             )}
             <ImageUploader images={postTestImages} onChange={setPostTestImages} label="Unggah Tangkapan Layar / Bukti PDF Google Form" />
+          </div>
+        )}
+
+        {metadata.reportType !== 'kuliah' && (
+          <div className="space-y-2 pt-2">
+            <Label className="text-[#a0a0a0]">Feedback / Ulasan Praktikum (Opsional)</Label>
+            <Textarea 
+              value={ulasanPraktikum} 
+              onChange={e => setUlasanPraktikum(e.target.value)} 
+              className="h-20 bg-[#242424] border-[#444] resize-none" 
+              placeholder="Tulis kendala, perasaan, atau saran Anda di sini. AI akan merekam dan menyusunnya dalam bahasa formal."
+            />
           </div>
         )}
       </div>

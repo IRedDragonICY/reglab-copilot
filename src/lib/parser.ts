@@ -12,9 +12,10 @@ export interface NotebookOutput {
 
 export interface ParsedNotebook {
   cells: NotebookCell[];
+  name?: string;
 }
 
-export function parseNotebook(jsonContent: string): ParsedNotebook {
+export function parseNotebook(jsonContent: string, name?: string): ParsedNotebook {
   try {
     const notebook = JSON.parse(jsonContent);
     if (!notebook || !Array.isArray(notebook.cells)) {
@@ -64,7 +65,7 @@ export function parseNotebook(jsonContent: string): ParsedNotebook {
       };
     });
 
-    return { cells: parsedCells };
+    return { cells: parsedCells, name };
   } catch (error) {
     console.error('Failed to parse notebook:', error);
     throw new Error('Failed to parse notebook file.');

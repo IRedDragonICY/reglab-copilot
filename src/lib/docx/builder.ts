@@ -402,9 +402,24 @@ export async function generateDocx(
   if (cellAnalysesArray) {
     for (const analysis of cellAnalysesArray) {
       if (analysis.section === 'implementasi' && analysis.imageIndex !== undefined) {
+        usedImplImages.add(analysis.imageIndex);
+      }
+    }
+  }
+
+  if (Array.isArray(cAnalysis)) {
+    for (const item of cAnalysis) {
+      if (item.imageIndex !== undefined) {
+        usedImplImages.add(item.imageIndex);
+      }
+    }
+  }
+
+  if (cellAnalysesArray) {
+    for (const analysis of cellAnalysesArray) {
+      if (analysis.section === 'implementasi' && analysis.imageIndex !== undefined) {
         const img = implImages[analysis.imageIndex];
         if (img) {
-          usedImplImages.add(analysis.imageIndex);
           bodyChildren.push(
             new Paragraph({
               children: [new TextRun({ text: String(analysis.caption).replace(/['"]/g, ''), bold: true, size: 22, font: 'Calibri' })],
@@ -426,7 +441,7 @@ export async function generateDocx(
   if (unusedImplImages.length > 0) {
     const orphans = findUnanalyzedImages(
       implImages,
-      cellAnalysesArray,
+      usedImplImages,
       'implementasi',
       'Implementasi',
     );
@@ -434,6 +449,35 @@ export async function generateDocx(
     bodyChildren.push(...rendered.paragraphs);
     implImageIndex = rendered.nextImgIdx;
   }
+
+  const renderCAnalysis = async (cAnalysisData: any, prefix: string, startIdx: number) => {
+    let currentIdx = startIdx;
+    const elements: any[] = [];
+    if (Array.isArray(cAnalysisData)) {
+      for (const item of cAnalysisData) {
+        if (item.imageIndex !== undefined && implImages[item.imageIndex]) {
+          const img = implImages[item.imageIndex];
+          usedImplImages.add(item.imageIndex);
+          if (item.caption) {
+            elements.push(
+              new Paragraph({
+                children: [new TextRun({ text: String(item.caption).replace(/['"]/g, ''), bold: true, size: 22, font: 'Calibri' })],
+                spacing: { before: 200, after: 100 },
+              })
+            );
+          }
+          const imgParagraphs = await createImagesParagraphs([img], String(item.caption || 'Output Visual').replace(/['"]/g, ''), prefix, currentIdx++);
+          elements.push(...imgParagraphs);
+        }
+        if (item.teks) {
+          elements.push(...(await parseMarkdownToParagraphs(item.teks)));
+        }
+      }
+    } else if (typeof cAnalysisData === 'string' && cAnalysisData.trim()) {
+      elements.push(...(await parseMarkdownToParagraphs(cAnalysisData)));
+    }
+    return { elements, nextIdx: currentIdx };
+  };
 
   if (!isKuliah) {
     bodyChildren.push(
@@ -443,7 +487,20 @@ export async function generateDocx(
         spacing: { before: 200, after: 100 },
       })
     );
-    bodyChildren.push(...(await parseMarkdownToParagraphs(cAnalysis)));
+    const { elements, nextIdx } = await renderCAnalysis(cAnalysis, 'II', implImageIndex);
+    bodyChildren.push(...elements);
+    implImageIndex = nextIdx;
+
+    if (typeof aiData.ulasanPraktikum === 'string' && aiData.ulasanPraktikum.trim() !== '') {
+      bodyChildren.push(
+        new Paragraph({
+          heading: HeadingLevel.HEADING_2,
+          children: [new TextRun({ text: 'E. Ulasan Praktikum', bold: true, size: 22, font: 'Calibri', color: '000000' })],
+          spacing: { before: 200, after: 100 },
+        })
+      );
+      bodyChildren.push(...(await parseMarkdownToParagraphs(aiData.ulasanPraktikum)));
+    }
   } else {
     bodyChildren.push(
       new Paragraph({
@@ -456,7 +513,9 @@ export async function generateDocx(
         spacing: { before: 400, after: 200 },
       })
     );
-    bodyChildren.push(...(await parseMarkdownToParagraphs(cAnalysis)));
+    let kesimpulanImageIndex = 1;
+    const { elements } = await renderCAnalysis(cAnalysis, 'III', kesimpulanImageIndex);
+    bodyChildren.push(...elements);
   }
 
   if (!isKuliah) {
@@ -570,7 +629,7 @@ export async function generateDocx(
       );
       const orphans = findUnanalyzedImages(
         postTestImages,
-        cellAnalysesArray,
+        usedPostTestImages,
         'post_test',
         'Lembar Jawaban Post-Test',
       );

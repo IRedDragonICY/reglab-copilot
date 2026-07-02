@@ -46,6 +46,7 @@ export function SessionTab({ sessionId }: { sessionId: string }) {
   const [postTest, setPostTest] = useState(session?.postTest || '');
   const [postTestImages, setPostTestImages] = useState<UserImage[]>([]);
 
+  const [ulasanPraktikum, setUlasanPraktikum] = useState(session?.ulasanPraktikum || '');
   const [notebookFiles, setNotebookFiles] = useState<File[]>([]);
   const [parsedNotebooks, setParsedNotebooks] = useState<ParsedNotebook[]>([]);
   const [postTestNotebookFiles, setPostTestNotebookFiles] = useState<File[]>([]);
@@ -167,17 +168,18 @@ export function SessionTab({ sessionId }: { sessionId: string }) {
   useColabFetcher({
     modulContext,
     postTest,
+    autoFetchColab: store.autoFetchColab,
     onImplAdd: useCallback((file, parsed) => {
       setNotebookFiles((prev) => {
-        if (prev.some((f) => f.name === file.name)) return prev;
-        setParsedNotebooks((p) => [...p, parsed]);
+        if (prev.some((f) => f.name === file.name || f.size === file.size)) return prev;
+        setParsedNotebooks((p) => [...p.filter(n => n.name !== file.name), { ...parsed, name: file.name }]);
         return [...prev, file];
       });
     }, []),
     onPostTestAdd: useCallback((file, parsed) => {
       setPostTestNotebookFiles((prev) => {
-        if (prev.some((f) => f.name === file.name)) return prev;
-        setPostTestParsedNotebooks((p) => [...p, parsed]);
+        if (prev.some((f) => f.name === file.name || f.size === file.size)) return prev;
+        setPostTestParsedNotebooks((p) => [...p.filter(n => n.name !== file.name), { ...parsed, name: file.name }]);
         return [...prev, file];
       });
     }, []),
@@ -191,7 +193,7 @@ export function SessionTab({ sessionId }: { sessionId: string }) {
     store.saveSession({
       ...session,
       metadata: { ...metadata },
-      preTest, modulContext, postTest,
+      preTest, modulContext, postTest, ulasanPraktikum,
       files: savedFiles,
       preTestImages: preTestImages.map(img => ({id: img.id, dataUrl: img.dataUrl})),
       implImages: implImages.map(img => ({id: img.id, dataUrl: img.dataUrl})),
@@ -229,8 +231,8 @@ export function SessionTab({ sessionId }: { sessionId: string }) {
         try {
           const parsed = parseNotebook(e.target?.result as string);
           setNotebookFiles(prev => {
-            if (prev.some(f => f.name === file.name)) return prev;
-            setParsedNotebooks(p => [...p, parsed]);
+            if (prev.some(f => f.name === file.name || f.size === file.size)) return prev;
+            setParsedNotebooks(p => [...p.filter(n => n.name !== file.name), { ...parsed, name: file.name }]);
             return [...prev, file];
           });
           setGeneratedDocxBlob(null);
@@ -250,8 +252,8 @@ export function SessionTab({ sessionId }: { sessionId: string }) {
         try {
           const parsed = parseNotebook(e.target?.result as string);
           setPostTestNotebookFiles(prev => {
-             if (prev.some(f => f.name === file.name)) return prev;
-             setPostTestParsedNotebooks(p => [...p, parsed]);
+             if (prev.some(f => f.name === file.name || f.size === file.size)) return prev;
+             setPostTestParsedNotebooks(p => [...p.filter(n => n.name !== file.name), { ...parsed, name: file.name }]);
              return [...prev, file];
           });
           setGeneratedDocxBlob(null);
@@ -290,7 +292,7 @@ export function SessionTab({ sessionId }: { sessionId: string }) {
     }
     saveCurrentSession();
     await generateReportAI({
-      metadata, preTest, preTestImages, modulContext, postTest, postTestImages, implImages,
+      metadata, preTest, preTestImages, modulContext, postTest, postTestImages, implImages, ulasanPraktikum,
       parsedNotebooks, notebookFiles, postTestParsedNotebooks, postTestNotebookFiles,
       session, store, setAiPreviewData, setGeneratedDocxBlob
     });
@@ -380,6 +382,7 @@ export function SessionTab({ sessionId }: { sessionId: string }) {
               preTest={preTest} setPreTest={setPreTest} handlePasteToUploader={handlePasteToUploader} preTestImages={preTestImages} setPreTestImages={setPreTestImages}
               modulContext={modulContext} setModulContext={setModulContext} implImages={implImages} setImplImages={setImplImages}
               postTest={postTest} setPostTest={setPostTest} postTestImages={postTestImages} setPostTestImages={setPostTestImages}
+              ulasanPraktikum={ulasanPraktikum} setUlasanPraktikum={setUlasanPraktikum}
               getRootPropsPt={getRootPropsPt} getInputPropsPt={getInputPropsPt} isDragActivePt={isDragActivePt} postTestNotebookFiles={postTestNotebookFiles} setPostTestNotebookFiles={setPostTestNotebookFiles} postTestParsedNotebooks={postTestParsedNotebooks} setPostTestParsedNotebooks={setPostTestParsedNotebooks}
               saveCurrentSession={saveCurrentSession} handleSaveCustomDate={handleSaveCustomDate} handleGenerate={handleGenerate} aiPreviewData={aiPreviewData} isGenerating={isGenerating}
             />
