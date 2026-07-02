@@ -33,6 +33,7 @@ import type {
   LoopCursor,
 } from '@/lib/copilot/types';
 import type { AIReportData } from '@/lib/types';
+import { generateId } from '@/lib/utils';
 
 /** Default per-session checkpoint cap (Req 4.3). */
 export const DEFAULT_CHECKPOINT_CAP = 50;
@@ -66,7 +67,7 @@ export function createCheckpoint(opts: {
   loopCursor: LoopCursor | null;
 }): Checkpoint {
   const checkpoint: Checkpoint = {
-    id: crypto.randomUUID(),
+    id: generateId(),
     createdAt: Date.now(),
     label: opts.label,
     source: opts.source,

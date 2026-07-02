@@ -314,7 +314,7 @@ function ReportPreviewInner({
             {imageOutputs.map((out: any, oIdx: number) => {
               const base64Content = out.content.replace(/\s+/g, '');
               if (!base64Content) return null;
-              return <PreviewImage key={oIdx} src={`data:image/png;base64,${base64Content}`} caption={`Gambar ${chapterPrefix}.{imgIdx++} ${tableCaption}`} />;
+              return <PreviewImage key={oIdx} src={`data:image/png;base64,${base64Content}`} caption={`Gambar ${chapterPrefix}.${imgIdx++} ${tableCaption}`} />;
             })}
           </div>
         );
@@ -626,7 +626,7 @@ function ReportPreviewInner({
                     {img && (
                       <div className="mb-4">
                         {item.caption && <h3 className="font-bold mb-2">{item.caption.replace(/['"]/g, '')}</h3>}
-                        <PreviewImage src={img.dataUrl} caption={`Gambar ${chapterPrefix}.${nextImgIdxII++} ${item.caption || 'Output Visual'}`} />
+                        <PreviewImage src={img.dataUrl} caption={`Gambar ${chapterPrefix}.\${nextImgIdxII++} ${item.caption || 'Output Visual'}`} />
                       </div>
                     )}
                     {item.teks && (

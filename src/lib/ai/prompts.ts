@@ -63,7 +63,8 @@ export function buildGenerationPrompt(ctx: GenerationPromptCtx): string {
         - File / tab editor yang aktif (contoh: "app.js", "prak.html", "styles.css"), beserta nomor baris yang ter-highlight bila terlihat.
         - Identifier kode yang relevan (nama fungsi, variabel, selector D3, properti CSS, atribut SVG) yang muncul di screenshot.
         - Output / tampilan UI yang dihasilkan (warna bar, label sumbu, urutan kategori, opsi dropdown yang sedang dipilih, taskbar/jam pada bottom-right, dsb).
-        - Apa yang BERUBAH dari step sebelumnya (misal: "warna bar dikustomisasi via properti \`fill\` pada array sample sehingga setiap bahasa memiliki warna unik dari biru→cyan", "urutan bar berubah dari default → ascending setelah dropdown Sort by dipilih ke 'Ascending'").
+        - Apa yang BERUBAH dari step sebelumnya.
+        - KHUSUS GRAFIK / VISUALISASI DATA (misal Clustering, Regression, dll): Anda WAJIB menganalisis MENGAPA grafik tersebut terlihat seperti itu. Jelaskan pola distribusi data, area keputusan (decision boundary), indikasi overfitting/underfitting, anomali (misal: "kenapa segmentasinya terlihat acak/amburadul? Apakah nilai K terlalu kecil?"), dan dampak parameter model terhadap hasil visualisasi tersebut layaknya analisis mahasiswa yang kritis.
         - Untuk Post-Test, kaitkan setiap screenshot ke nomor soal Post-Test tertentu dan jelaskan bagian mana dari soal yang dijawab oleh screenshot tersebut.
 
         ANTI AI-SLOP & LANGUAGE RULES (DILARANG KERAS):
@@ -94,7 +95,8 @@ export function buildGenerationPrompt(ctx: GenerationPromptCtx): string {
         Modul Context/Goals: ${ctx.modulContext}
         Post-Test Questions: ${ctx.postTest}
         Ulasan Praktikum (Raw Input dari User): ${ctx.ulasanPraktikum || '-'}
-
+        PENTING UNTUK ULASAN PRAKTIKUM: Jika Raw Input dari User di atas TIDAK KOSONG ("-"), Anda WAJIB MENGGUNAKAN DAN MENGEMBANGKAN KATA/IDE dari user tersebut secara detail! Jangan menggantinya dengan ulasan generik. Jika user menyebut "kendala dataset ikan", Anda wajib memasukkannya. Jika user memberikan saran, Anda wajib menuliskannya di field \`ulasan_praktikum\`.
+        
         Notebook Data (JSON Extracted Cells):
         ${ctx.notebookPromptData}
       `;

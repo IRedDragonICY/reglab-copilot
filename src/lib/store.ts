@@ -1,11 +1,12 @@
 import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
+import { persist } from 'zustand/middleware';
 import {
   get as idbGet,
   set as idbSet,
   del as idbDel,
   clear as idbClear,
 } from 'idb-keyval';
+import { generateId } from '@/lib/utils';
 import type {
   ModuleData,
   PracticumSchedule,
@@ -236,11 +237,21 @@ const DEFAULT_MK_LIST: string[] = [];
 // The instrumentation has zero observable effect — it just emits
 // performance entries and one `console.info` line on first read.
 const idbStorage = {
-  getItem: async (name: string): Promise<string | null> => {
+  getItem: async (name: string): Promise<any> => {
     if (typeof performance !== 'undefined') {
       performance.mark('hydrate.idb-read.start');
     }
     const raw = (await idbGet(name)) || null;
+    
+    let parsed = raw;
+    if (typeof raw === 'string') {
+      try {
+        parsed = JSON.parse(raw);
+      } catch (e) {
+        console.error('Failed to parse legacy JSON', e);
+      }
+    }
+
     if (typeof performance !== 'undefined') {
       performance.mark('hydrate.idb-read.end');
       try {
@@ -253,24 +264,14 @@ const idbStorage = {
         // measure can throw if a mark already moved past; never fatal.
       }
       const measure = performance.getEntriesByName('hydrate.idb-read').pop();
-      const bytes = raw ? raw.length : 0;
       // eslint-disable-next-line no-console
       console.info(
-        `[boot] idb-read=${Math.round(measure?.duration ?? 0)}ms payload-bytes=${bytes}`,
+        `[boot] idb-read=${Math.round(measure?.duration ?? 0)}ms`,
       );
-      // Soft warning when the persisted blob crosses 5MB — at this
-      // size every reload pays a noticeable parse cost. We never
-      // delete user data automatically (Req 11.11).
-      if (bytes > 5_000_000) {
-        // eslint-disable-next-line no-console
-        console.warn(
-          `[boot] persisted payload is ${(bytes / 1_000_000).toFixed(1)}MB — consider exporting a backup and clearing old sessions.`,
-        );
-      }
     }
-    return raw;
+    return parsed;
   },
-  setItem: async (name: string, value: string): Promise<void> => {
+  setItem: async (name: string, value: any): Promise<void> => {
     await idbSet(name, value);
   },
   removeItem: async (name: string): Promise<void> => {
@@ -360,9 +361,8 @@ export const useAppStore = create<AppState>()(
           isOptionsOpen: false,
         };
 
-        // Stringify can be expensive on multi-MB payloads but is unavoidable;
-        // the persist middleware does the same thing internally.
-        const idbRecord = JSON.stringify({ state: nextState, version: 2 });
+        // We no longer stringify since idbStorage uses native structured cloning.
+        const idbRecord = { state: nextState, version: 3 };
 
         // Direct, awaited write — no race with the persist middleware.
         await idbSet('report-generator-storage', idbRecord);
@@ -466,7 +466,7 @@ export const useAppStore = create<AppState>()(
       },
       
       createNewSession: () => {
-        const id = crypto.randomUUID();
+        const id = generateId();
         const newSession: ReportSession = {
           id,
           title: 'New Report',
@@ -553,7 +553,7 @@ export const useAppStore = create<AppState>()(
     }),
     {
       name: 'report-generator-storage',
-      storage: createJSONStorage(() => idbStorage),
+      storage: idbStorage as any,
       version: 3,
       migrate: (persistedState: unknown, version: number) =>
         migratePersistedState(persistedState, version),

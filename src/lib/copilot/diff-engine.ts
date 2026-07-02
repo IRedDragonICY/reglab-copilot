@@ -83,7 +83,6 @@ export function computeDiff(base: AIReportData, merged: AIReportData): Hunk[] {
   const stringFields = [
     'pendahuluan',
     'stepByStepNarrative',
-    'codeAnalysis',
   ] as const;
   for (const field of stringFields) {
     const beforeRaw = base[field];
@@ -97,6 +96,21 @@ export function computeDiff(base: AIReportData, merged: AIReportData): Hunk[] {
       before,
       after,
       lineDiff: diffLines(before, after) as LineChange[],
+    });
+  }
+
+  // --- codeAnalysis --------------------------------------------------------
+  if (!jsonEqual(base.codeAnalysis, merged.codeAnalysis)) {
+    const beforeRaw = base.codeAnalysis;
+    const afterRaw = merged.codeAnalysis;
+    const beforeStr = typeof beforeRaw === 'string' ? beforeRaw : (beforeRaw ? JSON.stringify(beforeRaw, null, 2) : '');
+    const afterStr = typeof afterRaw === 'string' ? afterRaw : (afterRaw ? JSON.stringify(afterRaw, null, 2) : '');
+    hunks.push({
+      id: 'field-codeAnalysis',
+      field: 'codeAnalysis',
+      before: beforeRaw ?? '',
+      after: afterRaw ?? '',
+      lineDiff: diffLines(beforeStr, afterStr) as LineChange[],
     });
   }
 

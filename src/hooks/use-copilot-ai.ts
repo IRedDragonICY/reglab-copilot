@@ -9,6 +9,7 @@ import {
 } from 'react';
 import { Content, Part } from '@google/genai';
 import { toast } from 'sonner';
+import { generateId } from '@/lib/utils';
 import type {
   AIReportData,
   UserImage,
@@ -486,7 +487,7 @@ export function useCopilotAI(session?: ReportSession | null) {
         return { ok: false, reason: result.reason };
       }
       pendingSteerRef.current = result.value;
-      const messageId = crypto.randomUUID();
+      const messageId = generateId();
       const checkpointId = snapshotBeforeUserMessage(result.value);
       setChatHistory((prev) => [
         ...prev,
@@ -544,7 +545,7 @@ export function useCopilotAI(session?: ReportSession | null) {
         nextThreads = [
           ...nextThreads,
           {
-            id: crypto.randomUUID(),
+            id: generateId(),
             title,
             createdAt: Date.now(),
             updatedAt: lastTs,
@@ -600,7 +601,7 @@ export function useCopilotAI(session?: ReportSession | null) {
         nextThreads = [
           ...nextThreads,
           {
-            id: crypto.randomUUID(),
+            id: generateId(),
             title,
             createdAt: Date.now(),
             updatedAt: Date.now(),
@@ -704,7 +705,7 @@ export function useCopilotAI(session?: ReportSession | null) {
       onStatus: (s: string) => setStatusText(s),
 
       onIterationStart: (loop: number) => {
-        const id = crypto.randomUUID();
+        const id = generateId();
         handle.activeMsgId = id;
         setIteration(loop);
         setRetryStatus(null);
@@ -847,7 +848,9 @@ export function useCopilotAI(session?: ReportSession | null) {
     },
   ): Promise<AIReportData> => {
     // Fresh abort controller per run.
-    abortControllerRef.current = new AbortController();
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+    const signal = controller.signal;
     // Wipe any stale task plan from a previous run BEFORE the SDK call
     // begins (Req 10.1). Without this, an old plan rendered as
     // unchecked circles even though the previous run had already
@@ -880,7 +883,7 @@ export function useCopilotAI(session?: ReportSession | null) {
         mode: args.mode,
         initial: args.initial,
         callbacks: args.callbacks,
-        signal: abortControllerRef.current.signal,
+        signal: signal,
         resumeCursor: args.resumeCursor,
         extraTools: { declarations: [...TOOL_REGISTRY.declarations] },
         ctx: args.ctx,
@@ -892,7 +895,7 @@ export function useCopilotAI(session?: ReportSession | null) {
       });
 
       // Honor explicit Stop / Pause: we already set runState above.
-      const reason = abortControllerRef.current?.signal.reason;
+      const reason = signal.reason;
       if (reason === 'stop' || reason === 'pause') {
         return result;
       }
@@ -904,7 +907,7 @@ export function useCopilotAI(session?: ReportSession | null) {
       // Aborts (Pause / Stop) come through here too because the SDK
       // rejects in-flight on signal abort. Don't surface those as
       // errors — the pause / stop callbacks already updated the state.
-      if (abortControllerRef.current?.signal.aborted) {
+      if (signal.aborted) {
         return EMPTY_AI_DATA;
       }
       console.error(err);
@@ -919,7 +922,9 @@ export function useCopilotAI(session?: ReportSession | null) {
       ]);
       throw err;
     } finally {
-      abortControllerRef.current = null;
+      if (abortControllerRef.current === controller) {
+        abortControllerRef.current = null;
+      }
     }
   };
 
@@ -927,6 +932,7 @@ export function useCopilotAI(session?: ReportSession | null) {
    * Resume from the last persisted cursor. Wired to the Continue button.
    */
   const continueRun = useCallback(async () => {
+    if (isGenerating) return;
     const currentSession = sessionRef.current;
     if (!currentSession) return;
     const cursor = currentSession.loopCursor ?? lastCursorRef.current;
@@ -991,6 +997,7 @@ export function useCopilotAI(session?: ReportSession | null) {
     setAiPreviewData,
     setGeneratedDocxBlob,
   }: any) => {
+    if (isGenerating) return;
     try {
       const apiKeyToUse = process.env.GEMINI_API_KEY || store.geminiApiKey;
       if (!apiKeyToUse) {
@@ -1070,7 +1077,7 @@ export function useCopilotAI(session?: ReportSession | null) {
         {
           role: 'user',
           text: `Tolong analisa data praktikum ini secara teliti dan persiapkan laporan beserta dokumen docx-nya. Terdapat total ${totalImages} lampiran visual.`,
-          id: crypto.randomUUID(),
+          id: generateId(),
           // No precedingCheckpointId — this is the kickoff message and
           // there's no prior aiData to roll back to. The per-message
           // undo arrow only renders when this field is set.
@@ -1236,6 +1243,7 @@ export function useCopilotAI(session?: ReportSession | null) {
     session: sessionArg,
     store,
   }: any) => {
+    if (isGenerating) return;
     if (!chatInput.trim() || !aiPreviewData) return;
 
     const apiKeyToUse = process.env.GEMINI_API_KEY || store.geminiApiKey;
@@ -1260,7 +1268,7 @@ export function useCopilotAI(session?: ReportSession | null) {
     // Snapshot the pre-instruction state so the per-message ↶ undo
     // arrow can roll back. Mint the message id ourselves so the
     // checkpoint can be associated with it.
-    const messageId = crypto.randomUUID();
+    const messageId = generateId();
     const checkpointId = snapshotBeforeUserMessage(userMessage);
     setChatHistory((prev) => [
       ...prev,

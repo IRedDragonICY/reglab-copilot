@@ -26,6 +26,7 @@ import {
   BookmarkPlus,
   Undo2,
   Quote,
+  Check,
 } from 'lucide-react';
 import { AIReportData } from '@/lib/types';
 import type { CopilotMessage, ToolCallState } from '@/hooks/use-copilot-ai';
@@ -292,6 +293,7 @@ export function CopilotPanel(props: CopilotPanelProps) {
   const [diffViewMode, setDiffViewMode] = useState<'pending' | 'readonly' | 'hidden'>('hidden');
   const [readonlyDiff, setReadonlyDiff] = useState<PendingMerge | null>(null);
   const [moreMenuOpen, setMoreMenuOpen] = useState(false);
+  const [undoConfirmId, setUndoConfirmId] = useState<string | null>(null);
 
   // Selection-aware editing chip — driven by a transient store slice
   // written by the report preview's `mouseup` handler.
@@ -311,6 +313,7 @@ export function CopilotPanel(props: CopilotPanelProps) {
 
   // Composer error (Req 11.2 inline-error path).
   const [composerError, setComposerError] = useState<string | null>(null);
+  const [confirmRegenerate, setConfirmRegenerate] = useState(false);
 
   useEffect(() => {
     if (chatContainerRef.current) {
@@ -387,14 +390,6 @@ export function CopilotPanel(props: CopilotPanelProps) {
         <button
           type="button"
           onClick={() => {
-            // Confirm if there's actual chat to lose. Welcome-only is a
-            // no-op so we skip the prompt for a cleaner UX.
-            const hasContent = chatHistory.some(
-              (m) => m.role !== 'agent' || (m.text && m.text !== chatHistory[0]?.text),
-            );
-            if (hasContent && !window.confirm('Start a new chat? This clears the current thread.')) {
-              return;
-            }
             onNewChat();
           }}
           title="New chat"
@@ -467,7 +462,7 @@ export function CopilotPanel(props: CopilotPanelProps) {
                   type="button"
                   onClick={() => {
                     setMoreMenuOpen(false);
-                    if (window.confirm('Clear the current chat thread?')) onNewChat();
+                    onNewChat();
                   }}
                   className="w-full flex items-center gap-2.5 px-3 py-1.5 text-[12px] text-[#F85149] hover:bg-[#1A0808] outline-none text-left"
                 >
@@ -547,18 +542,26 @@ export function CopilotPanel(props: CopilotPanelProps) {
                         <button
                           type="button"
                           onClick={() => {
-                            if (
-                              window.confirm(
-                                'Undo changes up to this point? Later messages will be removed.',
-                              )
-                            ) {
+                            if (undoConfirmId === m.id) {
                               undoToMessage(m.id!);
+                              setUndoConfirmId(null);
+                            } else {
+                              setUndoConfirmId(m.id!);
+                              setTimeout(() => setUndoConfirmId(null), 3000);
                             }
                           }}
-                          title="Undo changes up to this point"
-                          className="absolute top-2 right-2 w-6 h-6 flex items-center justify-center text-[#6E6E6E] hover:text-[#2F81F7] hover:bg-[#0F1A2E] rounded-sm opacity-0 group-hover/usermsg:opacity-100 transition-opacity"
+                          title={undoConfirmId === m.id ? "Click again to confirm undo" : "Undo changes up to this point"}
+                          className={`absolute top-2 right-2 w-6 h-6 flex items-center justify-center rounded-sm transition-opacity ${
+                            undoConfirmId === m.id 
+                              ? 'text-white bg-[#F85149] opacity-100' 
+                              : 'text-[#6E6E6E] hover:text-[#2F81F7] hover:bg-[#0F1A2E] opacity-0 group-hover/usermsg:opacity-100'
+                          }`}
                         >
-                          <Undo2 className="w-3 h-3" />
+                          {undoConfirmId === m.id ? (
+                            <Check className="w-3 h-3" />
+                          ) : (
+                            <Undo2 className="w-3 h-3" />
+                          )}
                           <span className="sr-only">Undo to this point</span>
                         </button>
                       )}
@@ -731,13 +734,35 @@ export function CopilotPanel(props: CopilotPanelProps) {
         </div>
 
         <button
-          onClick={handleGenerate}
+          onClick={() => {
+            if (aiPreviewData) {
+              if (confirmRegenerate) {
+                handleGenerate();
+                setConfirmRegenerate(false);
+              } else {
+                setConfirmRegenerate(true);
+                setTimeout(() => setConfirmRegenerate(false), 3000);
+              }
+            } else {
+              handleGenerate();
+            }
+          }}
           disabled={isGenerating}
-          className="w-full h-8 flex items-center justify-center gap-1.5 bg-[#2F81F7] hover:bg-[#2563EB] disabled:bg-[#161616] disabled:text-[#4A4A4A] disabled:cursor-not-allowed text-white font-medium transition-colors rounded-sm"
+          className={`w-full h-8 flex items-center justify-center gap-1.5 disabled:bg-[#161616] disabled:text-[#4A4A4A] disabled:cursor-not-allowed text-white font-medium transition-colors rounded-sm ${
+            confirmRegenerate
+              ? 'bg-[#F85149] hover:bg-[#D1242F]'
+              : 'bg-[#2F81F7] hover:bg-[#2563EB]'
+          }`}
         >
-          <Sparkles className="w-3.5 h-3.5" />
+          {confirmRegenerate ? (
+            <Check className="w-3.5 h-3.5" />
+          ) : (
+            <Sparkles className="w-3.5 h-3.5" />
+          )}
           <span className="text-[11px] tracking-wide uppercase">
-            {aiPreviewData ? 'Regenerate Analysis' : 'Generate Initial Report'}
+            {confirmRegenerate 
+              ? 'Click again to confirm' 
+              : (aiPreviewData ? 'Regenerate Analysis' : 'Generate Initial Report')}
           </span>
         </button>
 

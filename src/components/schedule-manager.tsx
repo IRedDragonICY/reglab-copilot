@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useAppStore, PracticumSchedule } from '@/lib/store';
+import { generateId } from '@/lib/utils';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
@@ -46,7 +47,7 @@ export function ScheduleManager() {
       if (data.schedules && Array.isArray(data.schedules)) {
         const newSchedules: PracticumSchedule[] = data.schedules.map((s: any) => ({
           ...s,
-          id: crypto.randomUUID(),
+          id: generateId(),
         }));
         store.setSchedules([...store.schedules, ...newSchedules]);
         setInputText('');
@@ -78,7 +79,7 @@ export function ScheduleManager() {
     if (editingId && editForm) {
       if (editingId.startsWith('new-')) {
         const newSchedule = {
-          id: crypto.randomUUID(),
+          id: generateId(),
           mataPraktikum: editForm.mataPraktikum || '',
           hari: editForm.hari || '',
           jamMulai: editForm.jamMulai || '',

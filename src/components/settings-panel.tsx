@@ -1,4 +1,5 @@
 /* --- components/settings-panel.tsx --- */
+import { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -68,6 +69,8 @@ export function SettingsPanel({
   getRootPropsPt, getInputPropsPt, isDragActivePt, postTestNotebookFiles, setPostTestNotebookFiles, postTestParsedNotebooks, setPostTestParsedNotebooks,
   saveCurrentSession, handleSaveCustomDate, handleGenerate, aiPreviewData, isGenerating
 }: SettingsPanelProps) {
+
+  const [confirmRegenerate, setConfirmRegenerate] = useState(false);
 
   // Hitung pertemuan mana saja yang sudah dikerjakan secara lebih ketat (handling number & string)
   const completedPertemuans = new Set<number>();
@@ -457,15 +460,33 @@ export function SettingsPanel({
         </Button>
         <Button 
           onClick={() => {
-            if (!aiPreviewData || confirm('Regenerate akan menghapus perubahan manual Anda pada laporan saat ini. Lanjutkan?')) {
+            if (aiPreviewData) {
+              if (confirmRegenerate) {
+                handleGenerate();
+                setConfirmRegenerate(false);
+              } else {
+                setConfirmRegenerate(true);
+                setTimeout(() => setConfirmRegenerate(false), 3000);
+              }
+            } else {
               handleGenerate();
             }
           }} 
           disabled={isGenerating}
-          className="gap-2 bg-blue-600 hover:bg-blue-700 text-white h-10 font-medium"
+          className={`gap-2 h-10 font-medium ${
+            confirmRegenerate
+              ? 'bg-red-600 hover:bg-red-700 text-white'
+              : 'bg-blue-600 hover:bg-blue-700 text-white'
+          }`}
         >
-          <Sparkles className="w-4 h-4" />
-          {aiPreviewData ? 'Regenerate' : 'Generate'}
+          {confirmRegenerate ? (
+            <Check className="w-4 h-4" />
+          ) : (
+            <Sparkles className="w-4 h-4" />
+          )}
+          {confirmRegenerate 
+            ? 'Klik lagi untuk konfirmasi' 
+            : (aiPreviewData ? 'Regenerate' : 'Generate')}
         </Button>
       </div>
     </div>

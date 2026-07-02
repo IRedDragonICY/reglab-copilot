@@ -197,9 +197,16 @@ export type CellAnalysisKey =
 export type Hunk =
   | {
       id: string;
-      field: 'pendahuluan' | 'stepByStepNarrative' | 'codeAnalysis';
+      field: 'pendahuluan' | 'stepByStepNarrative';
       before: string;
       after: string;
+      lineDiff: LineChange[];
+    }
+  | {
+      id: string;
+      field: 'codeAnalysis';
+      before: string | import('@/lib/types').ConclusionParagraph[];
+      after: string | import('@/lib/types').ConclusionParagraph[];
       lineDiff: LineChange[];
     }
   | {

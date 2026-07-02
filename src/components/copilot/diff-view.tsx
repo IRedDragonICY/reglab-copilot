@@ -199,13 +199,24 @@ function QaDiffBlock({ pairDiffs }: { pairDiffs: QAPairDiff[] }) {
 function HunkBody({ hunk, diffMode }: { hunk: Hunk; diffMode: DiffMode }) {
   if (
     hunk.field === 'pendahuluan' ||
-    hunk.field === 'stepByStepNarrative' ||
-    hunk.field === 'codeAnalysis'
+    hunk.field === 'stepByStepNarrative'
   ) {
     return (
       <LineDiffBlock
         before={hunk.before}
         after={hunk.after}
+        changes={hunk.lineDiff}
+        diffMode={diffMode}
+      />
+    );
+  }
+  if (hunk.field === 'codeAnalysis') {
+    const beforeStr = typeof hunk.before === 'string' ? hunk.before : (hunk.before ? JSON.stringify(hunk.before, null, 2) : '');
+    const afterStr = typeof hunk.after === 'string' ? hunk.after : (hunk.after ? JSON.stringify(hunk.after, null, 2) : '');
+    return (
+      <LineDiffBlock
+        before={beforeStr}
+        after={afterStr}
         changes={hunk.lineDiff}
         diffMode={diffMode}
       />
