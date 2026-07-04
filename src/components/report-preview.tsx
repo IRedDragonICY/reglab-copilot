@@ -1,6 +1,6 @@
 import React from 'react';
 import { useEffect, useRef } from 'react';
-import { ReportMetadata, AIReportData, UserImage } from '@/lib/types';
+import { ReportMetadata, AIReportData, UserImage, getFormattedJudulPertemuan } from '@/lib/types';
 import { ParsedNotebook, categorizeNotebookCells } from '@/lib/parser';
 import ReactMarkdown from 'react-markdown';
 import remarkMath from 'remark-math';
@@ -418,7 +418,7 @@ function ReportPreviewInner({
           <h1 className="text-[18.6px] font-bold uppercase">{metadata.reportType === 'kuliah' ? 'LAPORAN KULIAH' : 'LAPORAN PRAKTIKUM'}</h1>
           <h2 className="text-[18.6px] font-bold mt-1 uppercase">{metadata.mataPraktikum || (metadata.reportType === 'kuliah' ? '[Mata Kuliah]' : '[Mata Praktikum]')}</h2>
           <h2 className="text-[18.6px] font-bold mt-1">{metadata.reportType === 'kuliah' ? 'Topik' : 'Materi'}</h2>
-          <h2 className="text-[18.6px] font-bold mt-1 uppercase">{metadata.judulPertemuan || (metadata.reportType === 'kuliah' ? '[Topik Kajian]' : '[Judul Pertemuan]')}</h2>
+          <h2 className="text-[18.6px] font-bold mt-1 uppercase">{getFormattedJudulPertemuan(metadata)}</h2>
           <h2 className="text-[18.6px] font-bold mt-1">
             {metadata.laboratorium ? `${metadata.hariTanggalSesi} Lab. ${metadata.laboratorium}` : metadata.hariTanggalSesi || '[Hari/Tanggal/Sesi]'}
           </h2>

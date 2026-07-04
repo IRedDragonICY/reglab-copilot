@@ -67,8 +67,16 @@ export function parseNotebook(jsonContent: string, name?: string): ParsedNoteboo
 
     return { cells: parsedCells, name };
   } catch (error) {
-    console.error('Failed to parse notebook:', error);
-    throw new Error('Failed to parse notebook file.');
+    console.warn(`Failed to parse notebook as JSON, treating as raw code file: ${name}`, error);
+    return {
+      name,
+      cells: [
+        {
+          cell_type: 'code',
+          source: jsonContent,
+        }
+      ]
+    };
   }
 }
 

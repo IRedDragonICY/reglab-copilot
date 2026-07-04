@@ -22,7 +22,7 @@ import {
   UnderlineType,
 } from 'docx';
 import { ParsedNotebook, categorizeNotebookCells } from '../parser';
-import type { ReportMetadata, AIReportData, UserImage } from '@/lib/types';
+import { getFormattedJudulPertemuan, type ReportMetadata, type AIReportData, type UserImage } from '@/lib/types';
 import { CM_TO_TWIP } from './constants';
 import { sanitizeText } from './text';
 import { parseMarkdownToParagraphs } from './markdown';
@@ -73,7 +73,7 @@ export async function generateDocx(
     new Paragraph({
       alignment: AlignmentType.CENTER,
       children: [
-        new TextRun({ text: sanitizeText(metadata.judulPertemuan), bold: true, size: 28, font: 'Calibri' }),
+        new TextRun({ text: sanitizeText(getFormattedJudulPertemuan(metadata)), bold: true, size: 28, font: 'Calibri' }),
       ],
     }),
     new Paragraph({

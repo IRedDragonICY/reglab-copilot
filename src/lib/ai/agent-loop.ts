@@ -8,7 +8,7 @@ import type {
   TaskStatus,
 } from '@/lib/copilot/types';
 import { mergeReportData, type MergeMode } from './merge';
-import { withQuotaRetry } from './tools/retry';
+import { withQuotaRetry, isQuotaError } from './tools/retry';
 import {
   TOOL_REGISTRY,
   type ToolDeclaration,
@@ -448,7 +448,7 @@ export async function runAgentLoop(args: AgentLoopArgs): Promise<AIReportData> {
   const resolvedSystemInstruction = cursor
     ? cursor.systemInstruction
     : args.systemInstruction;
-  const resolvedModelId = cursor ? cursor.modelId : args.modelId;
+  let resolvedModelId = cursor ? cursor.modelId : args.modelId;
   const resolvedMaxLoops = cursor ? cursor.maxLoops : args.maxLoops;
   const resolvedDeclarationKey: 'praktikum' | 'kuliah' = cursor
     ? cursor.declarationKey
@@ -531,29 +531,40 @@ export async function runAgentLoop(args: AgentLoopArgs): Promise<AIReportData> {
 
     // ----- Stream the SDK call (with quota retry) -----
     let stream: AsyncIterable<unknown>;
-    try {
-      stream = (await withQuotaRetry(
-        () =>
-          ai.models.generateContentStream({
-            model: resolvedModelId,
-            contents: activeContents as Part[],
-            config: {
-              systemInstruction: resolvedSystemInstruction,
-              temperature: 0.2,
-              thinkingConfig: { includeThoughts: true },
-              tools: buildSdkTools() as never,
-              toolConfig: { functionCallingConfig: { mode: FunctionCallingConfigMode.AUTO } },
-            },
-          }),
-        {
-          schedule: args.retryConfig?.schedule,
-          signal: args.signal,
-          onAttempt: callbacks.onRetryAttempt,
-        },
-      )) as AsyncIterable<unknown>;
-    } catch (err) {
-      if (args.signal?.aborted) return accumulated;
-      throw err;
+    while (true) {
+      try {
+        stream = (await withQuotaRetry(
+          () =>
+            ai.models.generateContentStream({
+              model: resolvedModelId,
+              contents: activeContents as Part[],
+              config: {
+                systemInstruction: resolvedSystemInstruction,
+                temperature: 0.2,
+                ...(resolvedModelId.includes('gemini-3')
+                  ? { thinkingConfig: { thinkingLevel: 'medium' } as any }
+                  : { thinkingConfig: { includeThoughts: true } as any }),
+                tools: buildSdkTools() as never,
+                toolConfig: { functionCallingConfig: { mode: FunctionCallingConfigMode.AUTO } },
+              },
+            }),
+          {
+            schedule: args.retryConfig?.schedule,
+            signal: args.signal,
+            onAttempt: callbacks.onRetryAttempt,
+          },
+        )) as AsyncIterable<unknown>;
+        break; // Success
+      } catch (err) {
+        if (args.signal?.aborted) return accumulated;
+        if (isQuotaError(err) && resolvedModelId !== 'gemini-flash-latest') {
+          callbacks.onStatus?.(`Quota habis pada model ${resolvedModelId}. Beralih ke gemini-flash-latest...`);
+          callbacks.onSystemMessage?.(`⚠️ Limit quota pada model ${resolvedModelId} telah tercapai. Beralih secara otomatis ke model gemini-flash-latest.`);
+          resolvedModelId = 'gemini-flash-latest';
+          continue; // Retry inner loop
+        }
+        throw err;
+      }
     }
 
     // Multi-tool turn state — Gemini 3 may emit multiple parallel or

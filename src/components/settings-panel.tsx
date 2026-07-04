@@ -373,10 +373,10 @@ export function SettingsPanel({
         </div>
 
         <div className="space-y-2">
-          <Label className="text-[#a0a0a0]">File Notebook (.ipynb) Pembahasan</Label>
+          <Label className="text-[#a0a0a0]">File Kode / Notebook Pembahasan</Label>
           <div {...getRootProps()} className={`border border-dashed rounded-md p-4 text-center cursor-pointer transition-colors text-xs mb-2 ${isDragActive ? 'border-blue-500 bg-blue-500/10' : 'border-[#555] hover:border-[#777] bg-[#242424]'}`}>
             <input {...getInputProps()} />
-            <p className="text-gray-400 text-[10px]">Klik atau tarik file notebook di sini (Bisa lebih dari satu)</p>
+            <p className="text-gray-400 text-[10px]">Klik atau tarik file kode / notebook di sini (Bisa lebih dari satu)</p>
           </div>
           {notebookFiles.length > 0 && (
             <div className="space-y-1 mt-2">
@@ -414,7 +414,7 @@ export function SettingsPanel({
             />
             <div {...getRootPropsPt()} className={`border border-dashed rounded-md p-4 text-center cursor-pointer transition-colors text-xs mb-2 ${isDragActivePt ? 'border-amber-500 bg-amber-500/10' : 'border-[#555] hover:border-[#777] bg-[#242424]'}`}>
               <input {...getInputPropsPt()} />
-              <p className="text-gray-400 text-[10px]">Klik atau tarik file Notebook Post-Test (.ipynb) di sini</p>
+              <p className="text-gray-400 text-[10px]">Klik atau tarik file kode / notebook Post-Test di sini</p>
             </div>
             {postTestNotebookFiles.length > 0 && (
               <div className="space-y-1 mb-2">

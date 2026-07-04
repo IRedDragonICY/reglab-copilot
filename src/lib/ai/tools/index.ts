@@ -88,7 +88,8 @@ export type GranularPatch =
   | { tool: 'set_step_by_step_narrative'; text: string }
   | { tool: 'set_code_analysis'; text: string }
   | { tool: 'set_pre_test_qa'; pairs: QAPair[] }
-  | { tool: 'set_post_test_qa'; pairs: QAPair[] };
+  | { tool: 'set_post_test_qa'; pairs: QAPair[] }
+  | { tool: 'set_ulasan_praktikum'; text: string };
 
 // ---------------------------------------------------------------------------
 // Executor contracts

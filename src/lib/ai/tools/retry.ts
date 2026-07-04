@@ -44,6 +44,16 @@ export function isQuotaError(err: unknown): boolean {
   return false;
 }
 
+export function isHighDemandError(err: unknown): boolean {
+  if (err === null || err === undefined) return false;
+  const anyErr = err as { status?: unknown; response?: { status?: unknown }; message?: unknown };
+  if (anyErr.status === 503) return true;
+  if (anyErr.response && anyErr.response.status === 503) return true;
+  const message = anyErr.message;
+  if (typeof message === 'string' && (/503/i.test(message) || /unavailable/i.test(message))) return true;
+  return false;
+}
+
 export interface WithQuotaRetryOptions {
   /**
    * Fired immediately before each sleep with the attempt number (1-based)
@@ -106,7 +116,6 @@ export async function withQuotaRetry<T>(
   opts: WithQuotaRetryOptions = {},
 ): Promise<T> {
   const schedule = opts.schedule ?? DEFAULT_SCHEDULE;
-  const maxRetries = schedule.length;
 
   // Attempt 1 — immediate, no sleep, no `onAttempt`. There's nothing
   // to retry yet so announcing a retry would be misleading (and was
@@ -118,12 +127,21 @@ export async function withQuotaRetry<T>(
   try {
     return await fn();
   } catch (err) {
-    if (!isQuotaError(err)) throw err;
-    if (maxRetries === 0) throw err;
+    const isQuota = isQuotaError(err);
+    const isHighDemand = isHighDemandError(err);
+    if (!isQuota && !isHighDemand) throw err;
+    if (isQuota && schedule.length === 0) throw err;
+
     // Fall through to the retry loop with the first sleep.
     let lastError = err;
-    for (let retry = 1; retry <= maxRetries; retry++) {
-      const delayMs = schedule[retry - 1];
+    let retry = 1;
+    while (true) {
+      // If it's a quota error and we've exhausted our schedule, throw.
+      if (isQuotaError(lastError) && retry > schedule.length) {
+        throw lastError;
+      }
+      
+      const delayMs = retry <= schedule.length ? schedule[retry - 1] : 16000;
       // `onAttempt` reports the upcoming attempt number (1-based,
       // counting the first attempt as #1). retry=1 → attempt #2.
       opts.onAttempt?.(retry + 1, delayMs);
@@ -132,10 +150,11 @@ export async function withQuotaRetry<T>(
         return await fn();
       } catch (nextErr) {
         lastError = nextErr;
-        if (!isQuotaError(nextErr)) throw nextErr;
-        // Loop continues unless this was the final retry.
+        const nextIsQuota = isQuotaError(nextErr);
+        const nextIsHighDemand = isHighDemandError(nextErr);
+        if (!nextIsQuota && !nextIsHighDemand) throw nextErr;
+        retry++;
       }
     }
-    throw lastError;
   }
 }

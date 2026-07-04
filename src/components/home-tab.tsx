@@ -2,6 +2,7 @@
 
 import { useMemo } from 'react';
 import { useAppStore } from '@/lib/store';
+import { getFormattedJudulPertemuan } from '@/lib/types';
 import { format } from 'date-fns';
 import {
   Clock, FileText, Plus, Trash2, CheckCircle2, Circle, List,
@@ -350,7 +351,7 @@ export function HomeTab() {
                             )}
                             {session.metadata.judulPertemuan && (
                               <span className="truncate text-[#6E6E6E]">
-                                {session.metadata.judulPertemuan}
+                                {getFormattedJudulPertemuan(session.metadata)}
                               </span>
                             )}
                           </div>

@@ -68,7 +68,7 @@ const cellAnalysisEntrySchema = {
     explanation: {
       type: Type.STRING,
       description:
-        'Penjelasan natural berbahasa Indonesia (kalimat pasif, gaya laporan mahasiswa) untuk setiap screenshot/sel. WAJIB minimal 2 kalimat dan menyebut detail konkret yang TERLIHAT di gambar: file/tab editor aktif, nomor baris yang ter-highlight, identifier kode (fungsi/variabel/selector D3/properti CSS), output UI yang dihasilkan (warna, urutan, nilai dropdown), dan perubahan dari step sebelumnya. DILARANG menggunakan pembuka generic seperti "Pada gambar di atas...", "Seperti yang terlihat...", "Berdasarkan tampilan...", "Gambar di atas menunjukkan...". Langsung sebut observasi konkret.',
+        'Penjelasan natural berbahasa Indonesia (kalimat pasif, gaya laporan mahasiswa) untuk setiap screenshot/sel. WAJIB minimal 2 kalimat dan menyebut detail konkret yang TERLIHAT di gambar: file/tab editor aktif, nomor baris yang ter-highlight, identifier kode (fungsi/variabel/selector D3/properti CSS), output UI yang dihasilkan (warna, urutan, nilai dropdown), dan perubahan dari step sebelumnya. Hindari kata-kata puitis/kaku seperti "memberikan wawasan mendalam" atau "mengonfirmasi ketangguhan". DILARANG menggunakan pembuka generic seperti "Pada gambar di atas...", "Seperti yang terlihat...", "Berdasarkan tampilan...", "Gambar di atas menunjukkan...". Langsung sebut observasi konkret.',
     },
     caption: {
       type: Type.STRING,
@@ -115,7 +115,7 @@ const cellAnalysisPatchSchema = {
     explanation: {
       type: Type.STRING,
       description:
-        'Penjelasan natural berbahasa Indonesia (kalimat pasif, gaya laporan mahasiswa) untuk setiap screenshot/sel. Aturan tone & isi sama dengan add_cell_analysis.',
+        'Penjelasan natural berbahasa Indonesia (kalimat pasif, gaya laporan mahasiswa) untuk setiap screenshot/sel. Hindari kata-kata puitis/kaku seperti "memberikan wawasan mendalam". Aturan tone & isi sama dengan add_cell_analysis.',
     },
     caption: {
       type: Type.STRING,
@@ -334,6 +334,23 @@ export const setPostTestQaDeclaration: ToolDeclaration = {
   },
 };
 
+export const setUlasanPraktikumDeclaration: ToolDeclaration = {
+  name: 'set_ulasan_praktikum',
+  description:
+    "Set the feedback/ulasan of the practicum. JIKA USER MEMBERIKAN RAW INPUT ULASAN, ANDA WAJIB MERANGKUM/MENYEMPURNAKAN SELURUH POIN DARI INPUT TERSEBUT SECARA DETAIL TANPA ADA YANG HILANG. Jika user tidak menyediakan teks ulasan, draft secara natural.",
+  parameters: {
+    type: Type.OBJECT,
+    properties: {
+      ulasan_praktikum: {
+        type: Type.STRING,
+        description:
+          'Ulasan/Feedback pelaksanaan praktikum berupa perasaan, kendala/kesulitan, atau saran. JIKA USER MEMBERIKAN RAW INPUT ULASAN, ANDA WAJIB MERANGKUM/MENYEMPURNAKAN SELURUH POIN DARI INPUT TERSEBUT SECARA DETAIL TANPA ADA YANG HILANG. Jika user tidak menyediakan teks ulasan, draft secara natural.',
+      },
+    },
+    required: ['ulasan_praktikum'],
+  },
+};
+
 // ---------------------------------------------------------------------------
 // Meta-tools (4)
 // ---------------------------------------------------------------------------
@@ -485,7 +502,7 @@ export const readNotebookCellDeclaration: ToolDeclaration = {
  * and are passed alongside this aggregate by the registry layer.
  */
 export const ALL_GRANULAR_DECLARATIONS: readonly ToolDeclaration[] = [
-  // Granular writes (9)
+  // Granular writes (10)
   addCellAnalysisDeclaration,
   updateCellAnalysisDeclaration,
   deleteCellAnalysisDeclaration,
@@ -495,6 +512,7 @@ export const ALL_GRANULAR_DECLARATIONS: readonly ToolDeclaration[] = [
   setCodeAnalysisDeclaration,
   setPreTestQaDeclaration,
   setPostTestQaDeclaration,
+  setUlasanPraktikumDeclaration,
   // Meta (4)
   setTaskPlanDeclaration,
   updateTaskStatusDeclaration,

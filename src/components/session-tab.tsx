@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { parseNotebook, ParsedNotebook } from '@/lib/parser';
 import type { ReportMetadata, AIReportData, UserImage } from '@/lib/types';
+import { getFormattedJudulPertemuan } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { ReportPreview } from '@/components/report-preview';
@@ -142,9 +143,9 @@ export function SessionTab({ sessionId }: { sessionId: string }) {
           session.files.forEach(f => {
              if (!f.content || f.content.trim() === '') return;
              try {
-               const parsed = parseNotebook(f.content);
+               const parsed = parseNotebook(f.content, f.name);
                loadedParsed.push(parsed);
-               const fileObj = new File([f.content], f.name, { type: 'application/x-ipynb+json' });
+               const fileObj = new File([f.content], f.name, { type: 'text/plain' });
                loadedFiles.push(fileObj);
              } catch (e) {}
           });
@@ -229,42 +230,42 @@ export function SessionTab({ sessionId }: { sessionId: string }) {
       const reader = new FileReader();
       reader.onload = (e) => {
         try {
-          const parsed = parseNotebook(e.target?.result as string);
+          const parsed = parseNotebook(e.target?.result as string, file.name);
           setNotebookFiles(prev => {
             if (prev.some(f => f.name === file.name || f.size === file.size)) return prev;
             setParsedNotebooks(p => [...p.filter(n => n.name !== file.name), { ...parsed, name: file.name }]);
             return [...prev, file];
           });
           setGeneratedDocxBlob(null);
-          toast.success(`Notebook Uploaded: ${file.name}`);
-        } catch (err) { toast.error("Invalid notebook file"); }
+          toast.success(`File Uploaded: ${file.name}`);
+        } catch (err) { toast.error("Invalid file"); }
       };
       reader.readAsText(file);
     });
   }, []);
 
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop, accept: { 'application/x-ipynb+json': ['.ipynb'] }, maxFiles: 10 });
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop, maxFiles: 10 });
 
   const onDropPostTest = useCallback((acceptedFiles: File[]) => {
     acceptedFiles.forEach(file => {
       const reader = new FileReader();
       reader.onload = (e) => {
         try {
-          const parsed = parseNotebook(e.target?.result as string);
+          const parsed = parseNotebook(e.target?.result as string, file.name);
           setPostTestNotebookFiles(prev => {
              if (prev.some(f => f.name === file.name || f.size === file.size)) return prev;
              setPostTestParsedNotebooks(p => [...p.filter(n => n.name !== file.name), { ...parsed, name: file.name }]);
              return [...prev, file];
           });
           setGeneratedDocxBlob(null);
-          toast.success(`Post-Test Notebook Uploaded: ${file.name}`);
-        } catch (err) { toast.error("Invalid notebook file"); }
+          toast.success(`Post-Test File Uploaded: ${file.name}`);
+        } catch (err) { toast.error("Invalid file"); }
       };
       reader.readAsText(file);
     });
   }, []);
 
-  const { getRootProps: getRootPropsPt, getInputProps: getInputPropsPt, isDragActive: isDragActivePt } = useDropzone({ onDrop: onDropPostTest, accept: { 'application/x-ipynb+json': ['.ipynb'] }, maxFiles: 5 });
+  const { getRootProps: getRootPropsPt, getInputProps: getInputPropsPt, isDragActive: isDragActivePt } = useDropzone({ onDrop: onDropPostTest, maxFiles: 5 });
 
   const handleCreateNewMataPraktikum = () => {
     if (newMk.trim()) {
@@ -353,7 +354,7 @@ export function SessionTab({ sessionId }: { sessionId: string }) {
               chatHistory={chatHistory} isGenerating={isGenerating} statusText={statusText}
               selectedModelName={selectedModelName} setSelectedModelName={setSelectedModelName} availableModels={AVAILABLE_MODELS}
               handleGenerate={handleGenerate} aiPreviewData={aiPreviewData} chatInput={chatInput} setChatInput={setChatInput} handleCompileEdit={handleCompileEdit}
-              sessionTitle={session?.title || metadata.judulPertemuan || metadata.mataPraktikum || 'New chat'}
+              sessionTitle={session?.title || getFormattedJudulPertemuan(metadata) || metadata.mataPraktikum || 'New chat'}
               onNewChat={clearChat}
               onClose={() => store.toggleCopilot()}
               runState={runState} iteration={iteration} maxLoops={maxLoops}

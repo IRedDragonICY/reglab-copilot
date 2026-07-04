@@ -11,6 +11,7 @@ import {
   setCodeAnalysisDeclaration,
   setPreTestQaDeclaration,
   setPostTestQaDeclaration,
+  setUlasanPraktikumDeclaration,
   setTaskPlanDeclaration,
   updateTaskStatusDeclaration,
   requestUserClarificationDeclaration,
@@ -27,7 +28,7 @@ import {
  * change, so it must update the snapshot through review.
  *
  * The structural assertions guard the contract enumerated in Req 6
- * and Req 9.4: 15 tools total, all with a non-empty name + description
+ * and Req 9.4: 16 tools total, all with a non-empty name + description
  * and a `Type.OBJECT` root, with no legacy names sneaking into the
  * granular bundle.
  */
@@ -49,14 +50,14 @@ function stableStringify(value: unknown): string {
 }
 
 describe('ALL_GRANULAR_DECLARATIONS — byte stability', () => {
-  it('matches the locked snapshot of all 15 declarations', () => {
+  it('matches the locked snapshot of all 16 declarations', () => {
     expect(stableStringify(ALL_GRANULAR_DECLARATIONS)).toMatchSnapshot();
   });
 });
 
 describe('ALL_GRANULAR_DECLARATIONS — structural invariants', () => {
-  it('contains exactly 15 declarations', () => {
-    expect(ALL_GRANULAR_DECLARATIONS).toHaveLength(15);
+  it('contains exactly 16 declarations', () => {
+    expect(ALL_GRANULAR_DECLARATIONS).toHaveLength(16);
   });
 
   it('every declaration has a non-empty name, description, and Type.OBJECT root', () => {
@@ -99,6 +100,7 @@ describe('ALL_GRANULAR_DECLARATIONS — structural invariants', () => {
       setCodeAnalysisDeclaration,
       setPreTestQaDeclaration,
       setPostTestQaDeclaration,
+      setUlasanPraktikumDeclaration,
       setTaskPlanDeclaration,
       updateTaskStatusDeclaration,
       requestUserClarificationDeclaration,

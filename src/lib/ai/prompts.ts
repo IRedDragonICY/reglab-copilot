@@ -55,8 +55,8 @@ export function buildGenerationPrompt(ctx: GenerationPromptCtx): string {
         - Sebelum memanggil \`generate_report\` di batch terakhir, lakukan self-check: pastikan setiap gambar implementasi+post_test yang dikirim user sudah direlasikan secara utuh.
         - Untuk gambar Post-Test: \`section\` HARUS \`'post_test'\`. Untuk gambar Implementasi: \`section\` HARUS \`'implementasi'\`. Jangan tertukar.
 
-        PENJELASAN BLOK KODE NOTEBOOK (WAJIB JIKA ADA .IPYNB):
-        Jika mendapat input "Notebook Data" (.ipynb), Anda WAJIB membuat entri \`cellAnalyses\` untuk SETIAP sel kode (cell_type: "code") di dalam notebook tersebut. Isi \`notebookIndex\` dan \`cellIndex\` sesuai urutan. Berikan \`explanation\` yang mendalam untuk setiap blok kode. Jika sel kode tersebut tidak memiliki screenshot pendamping, abaikan \`imageIndex\` (jangan diisi), namun \`explanation\` HARUS tetap ada!
+        PENJELASAN BLOK KODE NOTEBOOK / FILE KODE (WAJIB JIKA ADA .IPYNB ATAU FILE KODE):
+        Jika mendapat input "Notebook Data" (.ipynb) ATAU file kode lainnya (seperti .py, .js, .php), Anda WAJIB membuat entri \`cellAnalyses\` untuk SETIAP sel kode (cell_type: "code") di dalam data tersebut. Isi \`notebookIndex\` dan \`cellIndex\` sesuai urutan. Berikan \`explanation\` yang mendalam untuk setiap blok kode. Jika sel kode tersebut tidak memiliki screenshot pendamping, abaikan \`imageIndex\` (jangan diisi), namun \`explanation\` HARUS tetap ada!
 
         OBSERVASI VISUAL WAJIB (UNTUK SETIAP SCREENSHOT):
         Jika laporan menyertakan SCREENSHOT, Anda WAJIB membaca isi gambar secara teliti dan menyebut detail spesifik pada \`explanation\`:
@@ -78,6 +78,7 @@ export function buildGenerationPrompt(ctx: GenerationPromptCtx): string {
            Sebagai gantinya, langsung sebut detail konkret yang teramati di screenshot (file, baris, identifier, warna, nilai, urutan), atau sebut alur logika kodenya. Tone laporan harus terdengar NATURAL seperti tulisan mahasiswa yang benar-benar mengerjakan, bukan teks template.
         2. NATURAL TECHNICAL TRANSLATIONS: DILARANG KERAS menerjemahkan istilah baku IT / Data Science ke dalam bahasa Indonesia secara harfiah. Contoh yang DILARANG: "Matriks Kebingungan" (Wajib: "Confusion Matrix"), "Hutan Acak" (Wajib: "Random Forest"), "Pohon Keputusan" (Wajib: "Decision Tree"). Gunakan istilah Bahasa Inggris aslinya untuk hal-hal teknis.
         3. FORMATTING ISTILAH ASING: Sesuai kaidah penulisan jurnal ilmiah bahasa Indonesia, semua istilah bahasa Inggris/asing WAJIB dicetak miring (italic). Contoh: "*Confusion Matrix*", "*Early Stopping*", "*Epoch*", "*Hyperparameter Tuning*". Gunakan format markdown \`*teks*\` atau \`_teks_\` untuk memiringkan istilah tersebut.
+        4. KURANGI KOSAKATA TERLALU BAKU/PUITIS: Hindari kata-kata transisi atau kesimpulan yang terlalu kaku dan berlebihan. Ubah gaya bahasa agar lebih membumi. Contoh yang DILARANG: "memberikan wawasan mendalam" (Ubah menjadi "memberikan pemahaman baru"). Contoh lain yang DILARANG: "mengonfirmasi ketangguhan model" (Ubah menjadi "menunjukkan bahwa model cukup baik"). Tone harus rileks, analitis, tapi tetap akademis mahasiswa.
 
         MULTI-TURN BATCH PROCESSING (CRITICAL):
         TOTAL GAMBAR/VISUAL YANG DIKIRIMKAN ADALAH: ${ctx.totalImages} gambar.

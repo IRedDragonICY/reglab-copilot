@@ -1005,6 +1005,10 @@ export function useCopilotAI(session?: ReportSession | null) {
         return;
       }
 
+      if (!preTestImages || preTestImages.length === 0) {
+        toast.warning('Lembar pretest belum dimasukkan! Laporan akan dibuat tanpa data pretest.');
+      }
+
       setIsGenerating(true);
       setProgress(10);
       setStatusText('Mempersiapkan data file & melabeli index gambar...');

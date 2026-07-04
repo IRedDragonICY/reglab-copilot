@@ -1,6 +1,6 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`ALL_GRANULAR_DECLARATIONS — byte stability > matches the locked snapshot of all 15 declarations 1`] = `
+exports[`ALL_GRANULAR_DECLARATIONS — byte stability > matches the locked snapshot of all 16 declarations 1`] = `
 "[
   {
     "description": "Append a single CellAnalysis entry to the report. Use this when adding one new screenshot or notebook-cell explanation. Prefer this over generate_report when the user is iteratively building up a report; it produces a smaller, traceable change.",
@@ -18,7 +18,7 @@ exports[`ALL_GRANULAR_DECLARATIONS — byte stability > matches the locked snaps
               "type": "NUMBER"
             },
             "explanation": {
-              "description": "Penjelasan natural berbahasa Indonesia (kalimat pasif, gaya laporan mahasiswa) untuk setiap screenshot/sel. WAJIB minimal 2 kalimat dan menyebut detail konkret yang TERLIHAT di gambar: file/tab editor aktif, nomor baris yang ter-highlight, identifier kode (fungsi/variabel/selector D3/properti CSS), output UI yang dihasilkan (warna, urutan, nilai dropdown), dan perubahan dari step sebelumnya. DILARANG menggunakan pembuka generic seperti \\"Pada gambar di atas...\\", \\"Seperti yang terlihat...\\", \\"Berdasarkan tampilan...\\", \\"Gambar di atas menunjukkan...\\". Langsung sebut observasi konkret.",
+              "description": "Penjelasan natural berbahasa Indonesia (kalimat pasif, gaya laporan mahasiswa) untuk setiap screenshot/sel. WAJIB minimal 2 kalimat dan menyebut detail konkret yang TERLIHAT di gambar: file/tab editor aktif, nomor baris yang ter-highlight, identifier kode (fungsi/variabel/selector D3/properti CSS), output UI yang dihasilkan (warna, urutan, nilai dropdown), dan perubahan dari step sebelumnya. Hindari kata-kata puitis/kaku seperti \\"memberikan wawasan mendalam\\" atau \\"mengonfirmasi ketangguhan\\". DILARANG menggunakan pembuka generic seperti \\"Pada gambar di atas...\\", \\"Seperti yang terlihat...\\", \\"Berdasarkan tampilan...\\", \\"Gambar di atas menunjukkan...\\". Langsung sebut observasi konkret.",
               "type": "STRING"
             },
             "imageIndex": {
@@ -94,7 +94,7 @@ exports[`ALL_GRANULAR_DECLARATIONS — byte stability > matches the locked snaps
               "type": "NUMBER"
             },
             "explanation": {
-              "description": "Penjelasan natural berbahasa Indonesia (kalimat pasif, gaya laporan mahasiswa) untuk setiap screenshot/sel. Aturan tone & isi sama dengan add_cell_analysis.",
+              "description": "Penjelasan natural berbahasa Indonesia (kalimat pasif, gaya laporan mahasiswa) untuk setiap screenshot/sel. Hindari kata-kata puitis/kaku seperti \\"memberikan wawasan mendalam\\". Aturan tone & isi sama dengan add_cell_analysis.",
               "type": "STRING"
             },
             "imageIndex": {
@@ -250,6 +250,22 @@ exports[`ALL_GRANULAR_DECLARATIONS — byte stability > matches the locked snaps
       },
       "required": [
         "pairs"
+      ],
+      "type": "OBJECT"
+    }
+  },
+  {
+    "description": "Set the feedback/ulasan of the practicum. JIKA USER MEMBERIKAN RAW INPUT ULASAN, ANDA WAJIB MERANGKUM/MENYEMPURNAKAN SELURUH POIN DARI INPUT TERSEBUT SECARA DETAIL TANPA ADA YANG HILANG. Jika user tidak menyediakan teks ulasan, draft secara natural.",
+    "name": "set_ulasan_praktikum",
+    "parameters": {
+      "properties": {
+        "ulasan_praktikum": {
+          "description": "Ulasan/Feedback pelaksanaan praktikum berupa perasaan, kendala/kesulitan, atau saran. JIKA USER MEMBERIKAN RAW INPUT ULASAN, ANDA WAJIB MERANGKUM/MENYEMPURNAKAN SELURUH POIN DARI INPUT TERSEBUT SECARA DETAIL TANPA ADA YANG HILANG. Jika user tidak menyediakan teks ulasan, draft secara natural.",
+          "type": "STRING"
+        }
+      },
+      "required": [
+        "ulasan_praktikum"
       ],
       "type": "OBJECT"
     }

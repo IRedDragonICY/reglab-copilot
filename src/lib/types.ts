@@ -133,6 +133,26 @@ export interface PracticumSchedule {
   fileNameFormat?: string;
 }
 
+export function getFormattedJudulPertemuan(metadata: Pick<SessionMetadata, 'reportType' | 'judulPertemuan' | 'pertemuan'>): string {
+  if (metadata.reportType === 'kuliah') {
+    return metadata.judulPertemuan || '[Topik Kajian]';
+  }
+  const rawJudul = metadata.judulPertemuan;
+  if (!rawJudul) {
+    return metadata.pertemuan ? `Pertemuan ke-${metadata.pertemuan}: [Judul Pertemuan]` : '[Judul Pertemuan]';
+  }
+  
+  if (rawJudul.toLowerCase().includes('pertemuan')) {
+    return rawJudul;
+  }
+  
+  if (metadata.pertemuan) {
+    return `Pertemuan ke-${metadata.pertemuan}: ${rawJudul}`;
+  }
+  
+  return rawJudul;
+}
+
 export interface ReportSession {
   id: string;
   title: string;

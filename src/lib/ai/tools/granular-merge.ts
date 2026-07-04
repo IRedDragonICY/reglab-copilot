@@ -102,6 +102,9 @@ export function applyGranularMerge(
 
     case 'set_post_test_qa':
       return { ...current, postTestAnswers: patch.pairs };
+
+    case 'set_ulasan_praktikum':
+      return { ...current, ulasanPraktikum: patch.text };
   }
 }
 
@@ -325,6 +328,17 @@ export const setPostTestQaExecutor: ToolExecutor = {
   },
 };
 
+/** `set_ulasan_praktikum(ulasan_praktikum: string)` — replace `ulasanPraktikum`. */
+export const setUlasanPraktikumExecutor: ToolExecutor = {
+  name: 'set_ulasan_praktikum',
+  execute: (rawArgs): ToolExecutorResult => {
+    if (!isObjectLike(rawArgs) || typeof rawArgs.ulasan_praktikum !== 'string') {
+      return { kind: 'noop', reason: 'set_ulasan_praktikum: ulasan_praktikum must be a string' };
+    }
+    return { kind: 'merge', patch: { tool: 'set_ulasan_praktikum', text: rawArgs.ulasan_praktikum } };
+  },
+};
+
 /**
  * Aggregator consumed by `tools/index.ts` to populate
  * `TOOL_REGISTRY.executors` on module load. Future waves (10.1 meta
@@ -342,4 +356,5 @@ export const GRANULAR_EXECUTORS: Record<string, ToolExecutor> = {
   set_code_analysis: setCodeAnalysisExecutor,
   set_pre_test_qa: setPreTestQaExecutor,
   set_post_test_qa: setPostTestQaExecutor,
+  set_ulasan_praktikum: setUlasanPraktikumExecutor,
 };

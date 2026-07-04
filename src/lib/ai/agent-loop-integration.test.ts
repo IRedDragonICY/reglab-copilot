@@ -149,9 +149,9 @@ describe('runAgentLoop — quota retry integration', () => {
   });
 
   it('exhausts retries on persistent 429s and emits a cursor before throwing', async () => {
-    // Default schedule = 5 retries → 6 total attempts. All 6 reject
-    // with 429s; withQuotaRetry surfaces the last error.
-    for (let i = 0; i < 6; i++) {
+    // Default schedule = 5 retries → 6 total attempts on primary model.
+    // Plus 6 attempts on fallback model (gemini-flash-latest) = 12 total.
+    for (let i = 0; i < 12; i++) {
       mockGenerateContentStream.mockRejectedValueOnce(QUOTA_429);
     }
 
@@ -163,6 +163,9 @@ describe('runAgentLoop — quota retry integration', () => {
     );
     promise.catch(() => {});
 
+    // First model retries
+    await vi.advanceTimersByTimeAsync(1000 + 2000 + 4000 + 8000 + 16000);
+    // Fallback model retries
     await vi.advanceTimersByTimeAsync(1000 + 2000 + 4000 + 8000 + 16000);
 
     await expect(promise).rejects.toBe(QUOTA_429);
