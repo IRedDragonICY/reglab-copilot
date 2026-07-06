@@ -53,6 +53,54 @@ describe('AI function declarations — byte stability', () => {
                   },
                   "type": "ARRAY"
                 },
+                "cellAnalyses": {
+                  "description": "Penjelasan/Analisis ringkas untuk SETIAP gambar screenshot (baik dari bagian Implementasi MAUPUN Post-Test) ATAU setiap sel notebook. Anda WAJIB membuat satu entri di array ini untuk SETIAP gambar yang diunggah agar gambar tersebut tidak dibuang (orphan). Susun secara kronologis berurutan.",
+                  "items": {
+                    "properties": {
+                      "caption": {
+                        "description": "Caption dinamis & spesifik untuk judul potongan kode. CONTOH: \\"Import Library Pandas\\", \\"Proses Cleansing Data Missing Value\\". DILARANG KERAS menggunakan kata generic/template seperti \\"Implementasi Kode\\"!",
+                        "type": "STRING"
+                      },
+                      "cellIndex": {
+                        "description": "Index sel notebook di dalam file tersebut. WAJIB diisi! Jika bukan notebook (hanya gambar saja), isi dengan -1.",
+                        "type": "NUMBER"
+                      },
+                      "explanation": {
+                        "description": "Penjelasan natural berbahasa Indonesia (kalimat pasif, gaya laporan mahasiswa) untuk setiap screenshot/sel. WAJIB minimal 2 kalimat dan menyebut detail konkret yang TERLIHAT di gambar. JIKA GAMBAR ADALAH GRAFIK/VISUALISASI (Clustering/KNN dll), Anda WAJIB menganalisis mengapa bentuknya seperti itu (contoh: mengapa boundary acak/amburadul, distribusi data, pengaruh nilai K, overfitting/underfitting). Hindari gaya bahasa puitis/kaku (misal: \\"memberikan pemahaman baru\\" BUKAN \\"memberikan wawasan mendalam\\"). DILARANG menggunakan pembuka generic seperti \\"Pada gambar di atas...\\". Langsung sebut observasi konkret. Khusus post_test jelaskan baris mana di ipynb / kode yang diubah untuk menyelesaikan tantangan/soal tersebut (jangan hanya berikan jawaban).",
+                        "type": "STRING"
+                      },
+                      "imageIndex": {
+                        "description": "Index gambar lampiran (0-based) dari daftar yang diberikan. WAJIB diisi untuk setiap screenshot implementasi atau post_test agar gambar terhubung ke entri ini. Tanpa imageIndex, gambar akan muncul tanpa penjelasan di laporan.",
+                        "type": "NUMBER"
+                      },
+                      "notebookIndex": {
+                        "description": "Index file notebook (0-based) jika terdapat lebih dari satu notebook yang diupload. WAJIB diisi! Jika bukan notebook (hanya gambar saja), isi dengan -1.",
+                        "type": "NUMBER"
+                      },
+                      "section": {
+                        "description": "Wajib diisi 'implementasi' or 'post_test'. Penting! Nilainya harus persis salah satu dari list ini.",
+                        "enum": [
+                          "implementasi",
+                          "post_test"
+                        ],
+                        "type": "STRING"
+                      },
+                      "tableCaption": {
+                        "description": "Caption dinamis khusus untuk output visual (tabel DataFrame/Grafik/Plot). CONTOH: \\"Tabel Distribusi Kategori Produk\\", \\"Grafik Elbow Method\\". DILARANG KERAS menggunakan kata generic seperti \\"Tabel/Output DataFrame\\"!",
+                        "type": "STRING"
+                      }
+                    },
+                    "required": [
+                      "explanation",
+                      "caption",
+                      "section",
+                      "notebookIndex",
+                      "cellIndex"
+                    ],
+                    "type": "OBJECT"
+                  },
+                  "type": "ARRAY"
+                },
                 "questions": {
                   "description": "Daftar soal post test (Wajib persis seperti di modul, dukung markdown list)",
                   "items": {
@@ -100,56 +148,13 @@ describe('AI function declarations — byte stability', () => {
                   },
                   "type": "ARRAY"
                 },
-                "cellAnalyses": {
-                  "description": "Penjelasan/Analisis ringkas untuk setiap block/cell (baik CODE maupun MARKDOWN) implementasi pada notebook ATAU gambar screenshot langkah kerja. Susun secara kronologis berurutan.",
-                  "items": {
-                    "properties": {
-                      "caption": {
-                        "description": "Caption dinamis & spesifik untuk judul potongan kode. CONTOH: \\"Import Library Pandas\\", \\"Proses Cleansing Data Missing Value\\". DILARANG KERAS menggunakan kata generic/template seperti \\"Implementasi Kode\\"!",
-                        "type": "STRING"
-                      },
-                      "cellIndex": {
-                        "description": "Index sel notebook di dalam file tersebut. WAJIB diisi! Jika bukan notebook (hanya gambar saja), isi dengan -1.",
-                        "type": "NUMBER"
-                      },
-                      "explanation": {
-                        "description": "Penjelasan natural berbahasa Indonesia (kalimat pasif, gaya laporan mahasiswa) untuk setiap screenshot/sel. WAJIB minimal 2 kalimat dan menyebut detail konkret yang TERLIHAT di gambar. JIKA GAMBAR ADALAH GRAFIK/VISUALISASI (Clustering/KNN dll), Anda WAJIB menganalisis mengapa bentuknya seperti itu (contoh: mengapa boundary acak/amburadul, distribusi data, pengaruh nilai K, overfitting/underfitting). Hindari gaya bahasa puitis/kaku (misal: \\"memberikan pemahaman baru\\" BUKAN \\"memberikan wawasan mendalam\\"). DILARANG menggunakan pembuka generic seperti \\"Pada gambar di atas...\\". Langsung sebut observasi konkret. Khusus post_test jelaskan baris mana di ipynb / kode yang diubah untuk menyelesaikan tantangan/soal tersebut (jangan hanya berikan jawaban).",
-                        "type": "STRING"
-                      },
-                      "imageIndex": {
-                        "description": "Index gambar lampiran (0-based) dari daftar yang diberikan. WAJIB diisi untuk setiap screenshot implementasi atau post_test agar gambar terhubung ke entri ini. Tanpa imageIndex, gambar akan muncul tanpa penjelasan di laporan.",
-                        "type": "NUMBER"
-                      },
-                      "notebookIndex": {
-                        "description": "Index file notebook (0-based) jika terdapat lebih dari satu notebook yang diupload. WAJIB diisi! Jika bukan notebook (hanya gambar saja), isi dengan -1.",
-                        "type": "NUMBER"
-                      },
-                      "section": {
-                        "description": "Wajib diisi 'implementasi' or 'post_test'. Penting! Nilainya harus persis salah satu dari list ini.",
-                        "type": "STRING"
-                      },
-                      "tableCaption": {
-                        "description": "Caption dinamis khusus untuk output visual (tabel DataFrame/Grafik/Plot). CONTOH: \\"Tabel Distribusi Kategori Produk\\", \\"Grafik Elbow Method\\". DILARANG KERAS menggunakan kata generic seperti \\"Tabel/Output DataFrame\\"!",
-                        "type": "STRING"
-                      }
-                    },
-                    "required": [
-                      "explanation",
-                      "caption",
-                      "section",
-                      "notebookIndex",
-                      "cellIndex"
-                    ],
-                    "type": "OBJECT"
-                  },
-                  "type": "ARRAY"
-                },
+                "cellAnalyses": "[Circular]",
                 "langkah_kerja": {
                   "description": "Penjelasan naratif (narasi dengan format markdown list agar rapi dan bagus) step-by-step implementasinya",
                   "type": "STRING"
                 },
                 "ulasan_praktikum": {
-                  "description": "Ulasan/Feedback pelaksanaan praktikum berupa perasaan, kendala/kesulitan, atau saran. JIKA USER MEMBERIKAN RAW INPUT ULASAN, ANDA WAJIB MERANGKUM/MENYEMPURNAKAN SELURUH POIN DARI INPUT TERSEBUT SECARA DETAIL TANPA ADA YANG HILANG. Jika user tidak menyediakan teks ulasan, draft secara natural.",
+                  "description": "Ulasan/Feedback pelaksanaan praktikum berupa perasaan, kendala/kesulitan, atau saran. JIKA USER MEMBERIKAN RAW INPUT ULASAN, ANDA WAJIB MERANGKUM/MENYEMPURNAKAN SELURUH POIN DARI INPUT TERSEBUT SECARA DETAIL TANPA ADA YANG HILANG. HANYA gunakan poin dari user, JANGAN mengarang kendala atau pengalaman fiktif yang tidak disebutkan. PENTING: JIKA USER MEMBERIKAN ULASAN, DILARANG KERAS MENGARANG CERITA LAIN ATAU KENDALA LAIN YANG TIDAK DISEBUTKAN USER. JIKA ANDA MENGARANG, ANDA GAGAL.",
                   "type": "STRING"
                 }
               },

@@ -75,14 +75,14 @@ const cellAnalysisItem = {
     explanation: { type: Type.STRING, description: 'Penjelasan natural berbahasa Indonesia (kalimat pasif, gaya laporan mahasiswa) untuk setiap screenshot/sel. WAJIB minimal 2 kalimat dan menyebut detail konkret yang TERLIHAT di gambar. JIKA GAMBAR ADALAH GRAFIK/VISUALISASI (Clustering/KNN dll), Anda WAJIB menganalisis mengapa bentuknya seperti itu (contoh: mengapa boundary acak/amburadul, distribusi data, pengaruh nilai K, overfitting/underfitting). Hindari gaya bahasa puitis/kaku (misal: "memberikan pemahaman baru" BUKAN "memberikan wawasan mendalam"). DILARANG menggunakan pembuka generic seperti "Pada gambar di atas...". Langsung sebut observasi konkret. Khusus post_test jelaskan baris mana di ipynb / kode yang diubah untuk menyelesaikan tantangan/soal tersebut (jangan hanya berikan jawaban).' },
     caption: { type: Type.STRING, description: 'Caption dinamis & spesifik untuk judul potongan kode. CONTOH: "Import Library Pandas", "Proses Cleansing Data Missing Value". DILARANG KERAS menggunakan kata generic/template seperti "Implementasi Kode"!' },
     tableCaption: { type: Type.STRING, description: 'Caption dinamis khusus untuk output visual (tabel DataFrame/Grafik/Plot). CONTOH: "Tabel Distribusi Kategori Produk", "Grafik Elbow Method". DILARANG KERAS menggunakan kata generic seperti "Tabel/Output DataFrame"!' },
-    section: { type: Type.STRING, description: "Wajib diisi 'implementasi' or 'post_test'. Penting! Nilainya harus persis salah satu dari list ini." }
+    section: { type: Type.STRING, enum: ['implementasi', 'post_test'], description: "Wajib diisi 'implementasi' or 'post_test'. Penting! Nilainya harus persis salah satu dari list ini." }
   },
   required: ['explanation', 'caption', 'section', 'notebookIndex', 'cellIndex']
 };
 
 const cellAnalysesArray = {
   type: Type.ARRAY,
-  description: 'Penjelasan/Analisis ringkas untuk setiap block/cell (baik CODE maupun MARKDOWN) implementasi pada notebook ATAU gambar screenshot langkah kerja. Susun secara kronologis berurutan.',
+  description: 'Penjelasan/Analisis ringkas untuk SETIAP gambar screenshot (baik dari bagian Implementasi MAUPUN Post-Test) ATAU setiap sel notebook. Anda WAJIB membuat satu entri di array ini untuk SETIAP gambar yang diunggah agar gambar tersebut tidak dibuang (orphan). Susun secara kronologis berurutan.',
   items: cellAnalysisItem,
 };
 
@@ -157,7 +157,7 @@ export const generateReportDeclaration = {
           langkah_kerja: { type: Type.STRING, description: 'Penjelasan naratif (narasi dengan format markdown list agar rapi dan bagus) step-by-step implementasinya' },
           analisis_hasil: conclusionArray,
           cellAnalyses: cellAnalysesArray,
-          ulasan_praktikum: { type: Type.STRING, description: 'Ulasan/Feedback pelaksanaan praktikum berupa perasaan, kendala/kesulitan, atau saran. JIKA USER MEMBERIKAN RAW INPUT ULASAN, ANDA WAJIB MERANGKUM/MENYEMPURNAKAN SELURUH POIN DARI INPUT TERSEBUT SECARA DETAIL TANPA ADA YANG HILANG. Jika user tidak menyediakan teks ulasan, draft secara natural.' },
+          ulasan_praktikum: { type: Type.STRING, description: 'Ulasan/Feedback pelaksanaan praktikum berupa perasaan, kendala/kesulitan, atau saran. JIKA USER MEMBERIKAN RAW INPUT ULASAN, ANDA WAJIB MERANGKUM/MENYEMPURNAKAN SELURUH POIN DARI INPUT TERSEBUT SECARA DETAIL TANPA ADA YANG HILANG. HANYA gunakan poin dari user, JANGAN mengarang kendala atau pengalaman fiktif yang tidak disebutkan. PENTING: JIKA USER MEMBERIKAN ULASAN, DILARANG KERAS MENGARANG CERITA LAIN ATAU KENDALA LAIN YANG TIDAK DISEBUTKAN USER. JIKA ANDA MENGARANG, ANDA GAGAL.' },
         },
         required: ['alat_dan_bahan', 'langkah_kerja', 'analisis_hasil', 'cellAnalyses', 'ulasan_praktikum'],
       },
@@ -167,6 +167,7 @@ export const generateReportDeclaration = {
         properties: {
           questions: { type: Type.ARRAY, description: 'Daftar soal post test (Wajib persis seperti di modul, dukung markdown list)', items: { type: Type.STRING } },
           answers: { type: Type.ARRAY, description: 'Jawaban post test detail', items: { type: Type.STRING } },
+          cellAnalyses: cellAnalysesArray,
         },
         required: ['questions', 'answers'],
       },

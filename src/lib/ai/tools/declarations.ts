@@ -337,14 +337,14 @@ export const setPostTestQaDeclaration: ToolDeclaration = {
 export const setUlasanPraktikumDeclaration: ToolDeclaration = {
   name: 'set_ulasan_praktikum',
   description:
-    "Set the feedback/ulasan of the practicum. JIKA USER MEMBERIKAN RAW INPUT ULASAN, ANDA WAJIB MERANGKUM/MENYEMPURNAKAN SELURUH POIN DARI INPUT TERSEBUT SECARA DETAIL TANPA ADA YANG HILANG. Jika user tidak menyediakan teks ulasan, draft secara natural.",
+    "Set the feedback/ulasan of the practicum. JIKA USER MEMBERIKAN RAW INPUT ULASAN, ANDA WAJIB MERANGKUM/MENYEMPURNAKAN SELURUH POIN DARI INPUT TERSEBUT SECARA DETAIL TANPA ADA YANG HILANG. HANYA gunakan poin dari user, JANGAN mengarang kendala fiktif yang tidak disebutkan. PENTING: JIKA USER MEMBERIKAN ULASAN, DILARANG KERAS MENGARANG CERITA LAIN ATAU KENDALA LAIN YANG TIDAK DISEBUTKAN USER. JIKA ANDA MENGARANG, ANDA GAGAL.",
   parameters: {
     type: Type.OBJECT,
     properties: {
       ulasan_praktikum: {
         type: Type.STRING,
         description:
-          'Ulasan/Feedback pelaksanaan praktikum berupa perasaan, kendala/kesulitan, atau saran. JIKA USER MEMBERIKAN RAW INPUT ULASAN, ANDA WAJIB MERANGKUM/MENYEMPURNAKAN SELURUH POIN DARI INPUT TERSEBUT SECARA DETAIL TANPA ADA YANG HILANG. Jika user tidak menyediakan teks ulasan, draft secara natural.',
+          'Ulasan/Feedback pelaksanaan praktikum berupa perasaan, kendala/kesulitan, atau saran. JIKA USER MEMBERIKAN RAW INPUT ULASAN, ANDA WAJIB MERANGKUM/MENYEMPURNAKAN SELURUH POIN DARI INPUT TERSEBUT SECARA DETAIL TANPA ADA YANG HILANG. HANYA gunakan poin dari user, JANGAN mengarang kendala fiktif yang tidak disebutkan. PENTING: JIKA USER MEMBERIKAN ULASAN, DILARANG KERAS MENGARANG CERITA LAIN ATAU KENDALA LAIN YANG TIDAK DISEBUTKAN USER. JIKA ANDA MENGARANG, ANDA GAGAL.',
       },
     },
     required: ['ulasan_praktikum'],

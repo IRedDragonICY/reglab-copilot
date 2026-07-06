@@ -658,7 +658,7 @@ export const useAppStore = create<AppState>()(
 );
 
 
-// Safety net: if hydration somehow doesn't resolve within 5 seconds
+// Safety net: if hydration somehow doesn't resolve within 1.5 seconds
 // (browser-level IDB quota stalls have been observed), flip the gate
 // anyway so the app becomes usable rather than stuck on the skeleton.
 // onRehydrateStorage's success path will still fire later; the second
@@ -667,8 +667,8 @@ if (typeof window !== 'undefined') {
   setTimeout(() => {
     if (!useAppStore.getState().hasHydrated) {
       // eslint-disable-next-line no-console
-      console.warn('[boot] hydration safety-net firing after 5000ms');
+      console.warn('[boot] hydration safety-net firing after 1500ms');
       useAppStore.setState({ hasHydrated: true });
     }
-  }, 5000);
+  }, 1500);
 }

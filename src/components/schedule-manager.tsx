@@ -618,13 +618,28 @@ export function ScheduleManager() {
           <div className="flex flex-col">
             {store.schedules.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full py-10 px-6 text-center">
-                <div className="w-10 h-10 flex items-center justify-center border border-[#1F1F1F] mb-4 rounded-sm">
-                  <Calendar className="w-4 h-4 text-[#4A4A4A]" />
+                <div className="w-14 h-14 flex items-center justify-center border border-[#1F1F1F] bg-[#111111] mb-5 rounded-full shadow-inner">
+                  <Calendar className="w-6 h-6 text-[#2EA043]" />
                 </div>
-                <p className="text-[12px] text-[#EDEDED] font-medium">No schedules yet</p>
-                <p className="text-[11px] text-[#6E6E6E] mt-1 max-w-[280px]">
-                  Add a practicum schedule manually, or paste raw text to import several at once.
+                <h3 className="text-[15px] text-[#EDEDED] font-semibold tracking-tight">Set up your Schedule</h3>
+                <p className="text-[12px] text-[#A1A1A1] mt-2 mb-6 max-w-[280px] leading-relaxed">
+                  Add a practicum schedule to track your subjects and document progress automatically.
                 </p>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setIsAddModalOpen(true)}
+                    className="h-9 px-4 flex items-center gap-2 text-[12px] font-medium text-[#EDEDED] bg-[#21262d] border border-[#30363d] hover:bg-[#30363d] transition-colors rounded-sm"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>Add Manually</span>
+                  </button>
+                  <button
+                    onClick={() => setIsPasteModalOpen(true)}
+                    className="h-9 px-4 flex items-center gap-2 text-[12px] font-medium text-[#EDEDED] bg-[#2EA043] hover:bg-[#238636] transition-colors rounded-sm shadow-[0_0_15px_rgba(46,160,67,0.15)] hover:shadow-[0_0_20px_rgba(46,160,67,0.25)]"
+                  >
+                    <span>Paste Text</span>
+                  </button>
+                </div>
               </div>
             ) : (
               <div className="w-full overflow-x-auto">

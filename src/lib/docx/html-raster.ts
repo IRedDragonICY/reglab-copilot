@@ -47,6 +47,15 @@ export async function rasterizeHtml(
     }
   }
 
+  // Sanitize image data URIs to prevent html2canvas atob errors
+  const imgs = div.getElementsByTagName('img');
+  for (let i = 0; i < imgs.length; i++) {
+    const src = imgs[i].getAttribute('src');
+    if (src && src.startsWith('data:')) {
+      imgs[i].setAttribute('src', src.replace(/\s+/g, ''));
+    }
+  }
+
   document.body.appendChild(div);
 
   try {
@@ -59,7 +68,14 @@ export async function rasterizeHtml(
     });
 
     const dataUrl = canvas.toDataURL('image/png');
-    const base64Data = dataUrl.replace(/^data:image\/\w+;base64,/, '');
+    if (!dataUrl || dataUrl === 'data:,') {
+      throw new Error('Canvas is empty or failed to render');
+    }
+    let base64Data = dataUrl.replace(/^data:image\/\w+;base64,/, '');
+    base64Data = base64Data.replace(/[^A-Za-z0-9+/=]/g, '');
+    const padNeeded = (4 - (base64Data.length % 4)) % 4;
+    if (padNeeded) base64Data += '='.repeat(padNeeded);
+
     const binaryString = window.atob(base64Data);
     const bytes = new Uint8Array(binaryString.length);
     for (let i = 0; i < binaryString.length; i++) {

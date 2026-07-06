@@ -69,8 +69,8 @@ describe('buildGenerationPrompt — zero-orphan policy (REGRESSION)', () => {
     expect(prompt).toContain('imageIndex');
   });
 
-  it('warns the model that orphan images render as "Penjelasan Belum Tersedia"', () => {
-    expect(prompt).toContain('Penjelasan Belum Tersedia');
+  it('warns the model that orphan images render as "kegagalan mutlak"', () => {
+    expect(prompt).toContain('kegagalan mutlak');
   });
 
   it('mandates a self-check before the final batch', () => {
@@ -145,5 +145,13 @@ describe('buildBatchContinuationMessage', () => {
     const msg = buildBatchContinuationMessage(3, 5);
     expect(msg).toContain('imageIndex');
     expect(msg.toLowerCase()).toContain('observasi visual');
+  });
+});
+
+describe('buildGenerationPrompt — ulasan praktikum', () => {
+  it('requires model to ONLY use user input without hallucinating fake constraints like pie chart error', () => {
+    const prompt = buildGenerationPrompt(baseCtx({ ulasanPraktikum: 'waktu post testnya cuma SEBENTAR' }));
+    expect(prompt).toContain('HANYA gunakan poin dari user, JANGAN mengarang cerita fiktif atau kendala yang tidak disebutkan');
+    expect(prompt).toContain('waktu post testnya cuma SEBENTAR');
   });
 });

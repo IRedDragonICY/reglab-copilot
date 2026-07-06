@@ -255,12 +255,12 @@ exports[`ALL_GRANULAR_DECLARATIONS — byte stability > matches the locked snaps
     }
   },
   {
-    "description": "Set the feedback/ulasan of the practicum. JIKA USER MEMBERIKAN RAW INPUT ULASAN, ANDA WAJIB MERANGKUM/MENYEMPURNAKAN SELURUH POIN DARI INPUT TERSEBUT SECARA DETAIL TANPA ADA YANG HILANG. Jika user tidak menyediakan teks ulasan, draft secara natural.",
+    "description": "Set the feedback/ulasan of the practicum. JIKA USER MEMBERIKAN RAW INPUT ULASAN, ANDA WAJIB MERANGKUM/MENYEMPURNAKAN SELURUH POIN DARI INPUT TERSEBUT SECARA DETAIL TANPA ADA YANG HILANG. HANYA gunakan poin dari user, JANGAN mengarang kendala fiktif yang tidak disebutkan. PENTING: JIKA USER MEMBERIKAN ULASAN, DILARANG KERAS MENGARANG CERITA LAIN ATAU KENDALA LAIN YANG TIDAK DISEBUTKAN USER. JIKA ANDA MENGARANG, ANDA GAGAL.",
     "name": "set_ulasan_praktikum",
     "parameters": {
       "properties": {
         "ulasan_praktikum": {
-          "description": "Ulasan/Feedback pelaksanaan praktikum berupa perasaan, kendala/kesulitan, atau saran. JIKA USER MEMBERIKAN RAW INPUT ULASAN, ANDA WAJIB MERANGKUM/MENYEMPURNAKAN SELURUH POIN DARI INPUT TERSEBUT SECARA DETAIL TANPA ADA YANG HILANG. Jika user tidak menyediakan teks ulasan, draft secara natural.",
+          "description": "Ulasan/Feedback pelaksanaan praktikum berupa perasaan, kendala/kesulitan, atau saran. JIKA USER MEMBERIKAN RAW INPUT ULASAN, ANDA WAJIB MERANGKUM/MENYEMPURNAKAN SELURUH POIN DARI INPUT TERSEBUT SECARA DETAIL TANPA ADA YANG HILANG. HANYA gunakan poin dari user, JANGAN mengarang kendala fiktif yang tidak disebutkan. PENTING: JIKA USER MEMBERIKAN ULASAN, DILARANG KERAS MENGARANG CERITA LAIN ATAU KENDALA LAIN YANG TIDAK DISEBUTKAN USER. JIKA ANDA MENGARANG, ANDA GAGAL.",
           "type": "STRING"
         }
       },

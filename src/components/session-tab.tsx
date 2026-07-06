@@ -414,7 +414,7 @@ export function SessionTab({ sessionId }: { sessionId: string }) {
                     onClick={handleDownload} 
                     className="fixed bottom-10 left-1/2 -translate-x-1/2 bg-[#2F81F7] hover:bg-[#2563EB] text-white rounded-sm py-3 px-5 gap-2 transition-colors z-40 font-medium text-[12px] tracking-wide uppercase border border-[#1F3A66] h-10"
                   >
-                    <Save className="w-4 h-4" /> {generatedDocxBlob ? 'Download .docx' : 'Save & Download'}
+                    <Save className="w-4 h-4" /> {generatedDocxBlob ? 'Download .docx' : 'Download'}
                   </Button>
                </div>
            ) : (

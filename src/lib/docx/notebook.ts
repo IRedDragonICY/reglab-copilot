@@ -347,9 +347,8 @@ export function findUnanalyzedImages(
       index: i,
       caption: bucketCaption,
       warning:
-        `Penjelasan untuk gambar ${sectionLabel} ini belum tersedia dari hasil analisis AI. ` +
-        `Silakan minta Copilot untuk meninjau ulang screenshot ini, atau tambahkan penjelasan ` +
-        `secara manual pada panel preview sebelum mengekspor laporan.`,
+        `Penjelasan untuk gambar ${sectionLabel} ini belum tersedia. ` +
+        `Silakan tambahkan penjelasan secara manual pada panel preview sebelum mengekspor laporan.`,
     });
   }
   return orphans;
@@ -400,19 +399,6 @@ export async function renderOrphanImages(
             }),
           ],
           spacing: { before: 100, after: 100 },
-        }),
-        new Paragraph({
-          alignment: AlignmentType.JUSTIFIED,
-          children: [
-            new TextRun({
-              text: sanitizeText(orphan.warning),
-              size: 22,
-              font: FONT_CALIBRI,
-              italics: true,
-              color: PALETTE.errorText,
-            }),
-          ],
-          spacing: { after: 300 },
         }),
       );
       index++;

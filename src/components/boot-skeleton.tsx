@@ -79,11 +79,12 @@ function SkeletonPanel({ title, icon }: { title: string; icon: React.ReactNode }
         <span className="text-[12px] font-medium text-[#A1A1A1]">{title}</span>
       </header>
       <div className="flex-1 flex flex-col items-center justify-center p-8 gap-2">
-        <div className="w-10 h-10 border border-[#1F1F1F] rounded-sm flex items-center justify-center">
+        <div className="w-14 h-14 border border-[#1F1F1F] bg-[#111111] mb-5 rounded-full flex items-center justify-center">
           {icon}
         </div>
-        <div className="h-3 w-32 bg-[#161616] rounded-sm animate-pulse motion-reduce:animate-none" />
-        <div className="h-2 w-48 bg-[#101010] rounded-sm animate-pulse motion-reduce:animate-none" />
+        <div className="h-4 w-40 bg-[#161616] rounded-sm animate-pulse motion-reduce:animate-none" />
+        <div className="h-3 w-56 bg-[#101010] mt-2 mb-6 rounded-sm animate-pulse motion-reduce:animate-none" />
+        <div className="h-9 w-32 bg-[#1C1C1C] rounded-sm animate-pulse motion-reduce:animate-none" />
       </div>
     </section>
   );

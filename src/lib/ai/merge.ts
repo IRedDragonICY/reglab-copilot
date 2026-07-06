@@ -28,6 +28,7 @@ export interface RawToolArgs {
   post_test?: {
     questions?: string[];
     answers?: string[];
+    cellAnalyses?: CellAnalysis[];
   };
 }
 
@@ -107,8 +108,14 @@ export function mergeReportData(
   }
 
   const incomingCells = incoming.kuliah?.cellAnalyses ?? incoming.praktikum?.cellAnalyses;
-  if (incomingCells && incomingCells.length > 0) {
-    merged.cellAnalyses = mergeCells(mode, current.cellAnalyses, incomingCells);
+  let allIncomingCells = incomingCells ? [...incomingCells] : [];
+  const incomingPostTestCells = incoming.post_test?.cellAnalyses;
+  if (incomingPostTestCells && incomingPostTestCells.length > 0) {
+    allIncomingCells = [...allIncomingCells, ...incomingPostTestCells];
+  }
+
+  if (allIncomingCells.length > 0) {
+    merged.cellAnalyses = mergeCells(mode, current.cellAnalyses, allIncomingCells);
   }
 
   const incomingUlasan = incoming.praktikum?.ulasan_praktikum;

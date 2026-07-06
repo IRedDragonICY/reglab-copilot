@@ -50,9 +50,9 @@ export function buildGenerationPrompt(ctx: GenerationPromptCtx): string {
 
         ZERO-ORPHAN POLICY (PALING KRITIS — JANGAN DILANGGAR):
         - Setiap gambar bertipe HASIL IMPLEMENTASI/JAWABAN (kategori \`implementasi\` atau \`post_test\`) WAJIB direlasikan melalui \`imageIndex\`, entah itu ke dalam \`cellAnalyses\` ATAUPUN \`analisis_hasil\` (khusus grafik evaluasi).
-        - DILARANG mengirimkan gambar ke output tanpa merelasikannya. Gambar tanpa relasi logis akan berstatus yatim piatu ("Penjelasan Belum Tersedia") yang merupakan kegagalan mutlak tugas Anda.
-        - PENTING UNTUK POST-TEST: Meskipun Anda sudah menjawab esai/soal post_test di object \`answers\`, Anda TETAP WAJIB membuat entri di \`cellAnalyses\` (dengan \`section: 'post_test'\`) khusus untuk menjelaskan baris kode / perubahan teknis apa yang Anda modifikasi pada screenshot tersebut. Sadarilah konteks praktikum sebelumnya! Jelaskan secara natural bagian kode mana yang "diubah" dari langkah praktikum untuk menyelesaikan soal post-test ini (misal: "Untuk menyelesaikan tugas ini, parameter \\\`numDisparities\\\` yang sebelumnya bernilai 16 pada langkah praktikum diubah menjadi 80..."). Jangan hanya menjawab di \`answers\` lalu meninggalkan gambar post-test tanpa penjelasan komparatif di \`cellAnalyses\`.
-        - Sebelum memanggil \`generate_report\` di batch terakhir, lakukan self-check: pastikan setiap gambar implementasi+post_test yang dikirim user sudah direlasikan secara utuh.
+        - DILARANG mengirimkan gambar ke output tanpa merelasikannya. Gambar tanpa relasi logis akan berstatus yatim piatu yang merupakan kegagalan mutlak tugas Anda.
+        - PENTING UNTUK POST-TEST: Meskipun Anda sudah menjawab esai/soal post_test di object \`answers\`, Anda TETAP WAJIB membuat entri di \`cellAnalyses\` (baik di objek \`praktikum\` maupun \`post_test\`) dengan \`section: 'post_test'\` khusus untuk menjelaskan baris kode / perubahan teknis apa yang Anda modifikasi pada screenshot tersebut. Sadarilah konteks praktikum sebelumnya! Jelaskan secara natural bagian kode mana yang "diubah" dari langkah praktikum untuk menyelesaikan soal post-test ini (misal: "Untuk menyelesaikan tugas ini, parameter \\\`numDisparities\\\` yang sebelumnya bernilai 16 pada langkah praktikum diubah menjadi 80..."). Jangan hanya menjawab di \`answers\` lalu meninggalkan gambar post-test tanpa penjelasan komparatif di \`cellAnalyses\`.
+        - Sebelum memanggil \`generate_report\` di batch terakhir, lakukan self-check: pastikan SETIAP gambar implementasi dan post_test yang dikirim user sudah direlasikan secara utuh. Jika jumlah entri \`cellAnalyses\` masih kurang dari total gambar, Anda WAJIB melanjutkannya.
         - Untuk gambar Post-Test: \`section\` HARUS \`'post_test'\`. Untuk gambar Implementasi: \`section\` HARUS \`'implementasi'\`. Jangan tertukar.
 
         PENJELASAN BLOK KODE NOTEBOOK / FILE KODE (WAJIB JIKA ADA .IPYNB ATAU FILE KODE):
@@ -96,7 +96,7 @@ export function buildGenerationPrompt(ctx: GenerationPromptCtx): string {
         Modul Context/Goals: ${ctx.modulContext}
         Post-Test Questions: ${ctx.postTest}
         Ulasan Praktikum (Raw Input dari User): ${ctx.ulasanPraktikum || '-'}
-        PENTING UNTUK ULASAN PRAKTIKUM: Jika Raw Input dari User di atas TIDAK KOSONG ("-"), Anda WAJIB MENGGUNAKAN DAN MENGEMBANGKAN KATA/IDE dari user tersebut secara detail! Jangan menggantinya dengan ulasan generik. Jika user menyebut "kendala dataset ikan", Anda wajib memasukkannya. Jika user memberikan saran, Anda wajib menuliskannya di field \`ulasan_praktikum\`.
+        PENTING UNTUK ULASAN PRAKTIKUM: Jika Raw Input dari User di atas TIDAK KOSONG ("-"), Anda WAJIB MENGGUNAKAN DAN MENGEMBANGKAN KATA/IDE dari user tersebut secara detail! Jangan menggantinya dengan ulasan generik. Jika user menyebut "kendala dataset ikan", Anda wajib memasukkannya. Jika user memberikan saran, Anda wajib menuliskannya di field \`ulasan_praktikum\`. HANYA gunakan poin dari user, JANGAN mengarang cerita fiktif atau kendala yang tidak disebutkan (seperti error pie chart) jika user tidak menyebutkannya.
         
         Notebook Data (JSON Extracted Cells):
         ${ctx.notebookPromptData}

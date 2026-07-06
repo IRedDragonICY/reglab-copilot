@@ -293,13 +293,20 @@ export function HomeTab() {
             <div className="flex-1 overflow-y-auto">
               {sortedSessions.length === 0 ? (
                 <div className="h-full flex flex-col items-center justify-center p-8 text-center">
-                  <div className="w-10 h-10 flex items-center justify-center border border-[#1F1F1F] mb-4 rounded-sm">
-                    <FileText className="w-4 h-4 text-[#4A4A4A]" />
+                  <div className="w-14 h-14 flex items-center justify-center border border-[#1F1F1F] bg-[#111111] mb-5 rounded-full shadow-inner">
+                    <FileText className="w-6 h-6 text-[#2F81F7]" />
                   </div>
-                  <p className="text-[12px] text-[#EDEDED] font-medium">No reports yet</p>
-                  <p className="text-[11px] text-[#6E6E6E] mt-1">
-                    Click <span className="text-[#EDEDED]">New</span> to start your first report.
+                  <h3 className="text-[15px] text-[#EDEDED] font-semibold tracking-tight">Welcome to Reglab</h3>
+                  <p className="text-[12px] text-[#A1A1A1] mt-2 mb-6 max-w-[280px] leading-relaxed">
+                    Create your first practicum report. You can attach notebooks, module context, and get AI-powered drafting.
                   </p>
+                  <button
+                    onClick={handleCreateRef}
+                    className="h-9 px-5 flex items-center gap-2 text-[12px] font-medium text-[#EDEDED] bg-[#2F81F7] hover:bg-[#2563EB] transition-colors rounded-sm shadow-[0_0_15px_rgba(47,129,247,0.15)] hover:shadow-[0_0_20px_rgba(47,129,247,0.25)]"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>Create New Report</span>
+                  </button>
                 </div>
               ) : (
                 <ul className="divide-y divide-[#1A1A1A]">

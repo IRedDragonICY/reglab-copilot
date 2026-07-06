@@ -152,11 +152,11 @@ describe('findUnanalyzedImages', () => {
     expect(orphans[0].caption).toBe('Lampiran Tambahan Implementasi');
   });
 
-  it('warning text is actionable and mentions both Copilot review and manual edit', () => {
+  it('warning text is actionable and mentions manual edit', () => {
     const images = [IMG('a')];
     const orphans = findUnanalyzedImages(images, getClaimedIndexes([], 'post_test'), 'post_test', 'Lembar Jawaban Post-Test');
     const w = orphans[0].warning.toLowerCase();
-    expect(w).toContain('copilot');
+    expect(w).not.toContain('copilot');
     expect(w).toContain('manual');
     expect(w).toContain('preview');
   });

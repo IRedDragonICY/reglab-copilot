@@ -992,6 +992,7 @@ export function useCopilotAI(session?: ReportSession | null) {
     notebookFiles,
     postTestParsedNotebooks,
     postTestNotebookFiles,
+    ulasanPraktikum,
     session: sessionArg,
     store,
     setAiPreviewData,
@@ -1099,6 +1100,7 @@ export function useCopilotAI(session?: ReportSession | null) {
         preTest,
         modulContext,
         postTest,
+        ulasanPraktikum,
         notebookPromptData,
       });
 
