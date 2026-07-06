@@ -27,6 +27,7 @@ import { CM_TO_TWIP } from './constants';
 import { sanitizeText } from './text';
 import { parseMarkdownToParagraphs } from './markdown';
 import { createImagesParagraphs, renderNotebookCells, findUnanalyzedImages, renderOrphanImages } from './notebook';
+import { yieldThread } from '../utils';
 
 // Re-export so existing consumers of `@/lib/docxBuilder` keep working.
 // Canonical definitions live in `@/lib/types` and the helpers in `./docx/*`.
@@ -44,8 +45,10 @@ export async function generateDocx(
   postTestImages: UserImage[] = [],
   modulContext: string = '',
   postTest: string = '',
-  numImplNotebooks: number = notebooks.length
+  numImplNotebooks: number = notebooks.length,
+  onProgress?: (msg: string) => void
 ): Promise<Blob> {
+  if (onProgress) onProgress("Membangun cover halaman...");
   const isKuliah = metadata.reportType === 'kuliah';
   const coverChildren: any[] = [];
   const frontChildren: any[] = [];
@@ -162,6 +165,7 @@ export async function generateDocx(
     })
   );
 
+  if (onProgress) onProgress("Membangun bab pendahuluan...");
   frontChildren.push(
     new Paragraph({
       heading: HeadingLevel.HEADING_1,
@@ -382,6 +386,7 @@ export async function generateDocx(
   let implImageIndex = 1;
 
   for (let nbIdx = 0; nbIdx < notebooks.length; nbIdx++) {
+    if (onProgress) onProgress(`Memproses implementasi dari file ke-${nbIdx + 1}...`);
     const notebook = notebooks[nbIdx];
     if (notebook) {
       const sections = categorizeNotebookCells(notebook, nbIdx, cellAnalysesArray || []);
@@ -396,6 +401,7 @@ export async function generateDocx(
       implCodeIndex = renderedImpl.nextCodeIdx;
       implImageIndex = renderedImpl.nextImgIdx;
     }
+    await yieldThread();
   }
 
   const usedImplImages = new Set<number>();
@@ -434,6 +440,7 @@ export async function generateDocx(
           bodyChildren.push(...(await parseMarkdownToParagraphs(analysis.explanation)));
         }
       }
+      await yieldThread();
     }
   }
   
@@ -592,6 +599,7 @@ export async function generateDocx(
           postTestImageIndex = renderedPostTest.nextImgIdx;
         }
       }
+      await yieldThread();
     }
     
     const usedPostTestImages = new Set<number>();
@@ -617,6 +625,7 @@ export async function generateDocx(
         }
       }
     }
+      await yieldThread();
 
     const unusedPostTestImages = postTestImages.filter((_, idx) => !usedPostTestImages.has(idx));
     if (unusedPostTestImages.length > 0) {
@@ -676,6 +685,7 @@ export async function generateDocx(
     right: 3 * CM_TO_TWIP,
   };
 
+  if (onProgress) onProgress("Merender dokumen final...");
   const doc = new Document({
     features: {
         updateFields: true,

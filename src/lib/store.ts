@@ -231,6 +231,7 @@ interface AppState {
 
 const DEFAULT_MK_LIST: string[] = [];
 
+
 // Custom storage for Zustand using idb-keyval. Wrapped with
 // `performance.mark` / `performance.measure` so a regression in
 // hydration time is detectable from devtools without code changes.
@@ -658,7 +659,7 @@ export const useAppStore = create<AppState>()(
 );
 
 
-// Safety net: if hydration somehow doesn't resolve within 1.5 seconds
+// Safety net: if hydration somehow doesn't resolve within 10 seconds
 // (browser-level IDB quota stalls have been observed), flip the gate
 // anyway so the app becomes usable rather than stuck on the skeleton.
 // onRehydrateStorage's success path will still fire later; the second

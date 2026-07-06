@@ -16,6 +16,7 @@ import { codeLines as buildCodeLines } from './code';
 import { lightBorderedTable, titledRow, contentRow } from './table';
 import { parseMarkdownToParagraphs } from './markdown';
 import { rasterizeHtml } from './html-raster';
+import { yieldThread } from '../utils';
 
 /**
  * Notebook-rendering routines.
@@ -174,9 +175,20 @@ export async function renderNotebookCells(
             }
           } else if ((output as any).fallbackText) {
             // Rasterization failed — fall back to plaintext fallback rendering.
-            const outputParagraphs = (output as any).fallbackText.split('\n').map((line: string) =>
+            let lines = (output as any).fallbackText.split('\n');
+            const MAX_LINES = 20;
+            if (lines.length > MAX_LINES) {
+              lines = [
+                ...lines.slice(0, 15),
+                '',
+                '... [OUTPUT TRUNCATED / TERPOTONG KARENA TERLALU PANJANG] ...',
+                '',
+                ...lines.slice(-5)
+              ];
+            }
+            const outputParagraphs = lines.map((line: string) =>
               new Paragraph({
-                children: [new TextRun({ text: sanitizeText(line), font: FONT_MONO, size: 20 })],
+                children: [new TextRun({ text: sanitizeText(line.substring(0, 1000)), font: FONT_MONO, size: 20 })],
                 spacing: { line: 240 },
               }),
             );
@@ -191,9 +203,20 @@ export async function renderNotebookCells(
             ]));
           }
         } else if (output.type === 'text' && output.content.trim()) {
-          const outputParagraphs = output.content.split('\n').map((line) =>
+          let lines = output.content.split('\n');
+          const MAX_LINES = 20;
+          if (lines.length > MAX_LINES) {
+            lines = [
+              ...lines.slice(0, 15),
+              '',
+              '... [OUTPUT TRUNCATED / TERPOTONG KARENA TERLALU PANJANG] ...',
+              '',
+              ...lines.slice(-5)
+            ];
+          }
+          const outputParagraphs = lines.map((line) =>
             new Paragraph({
-              children: [new TextRun({ text: sanitizeText(line), font: FONT_MONO, size: 20 })],
+              children: [new TextRun({ text: sanitizeText(line.substring(0, 1000)), font: FONT_MONO, size: 20 })],
               spacing: { line: 240 },
             }),
           );
@@ -288,6 +311,7 @@ export async function renderNotebookCells(
         }
       }
     }
+    await yieldThread();
   }
 
   return { paragraphs: children, nextCodeIdx: codeIdx, nextImgIdx: imgIdx };

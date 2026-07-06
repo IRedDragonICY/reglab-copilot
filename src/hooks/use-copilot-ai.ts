@@ -691,6 +691,7 @@ export function useCopilotAI(session?: ReportSession | null) {
       modulContext,
       postTest,
       numImplNotebooks,
+      (msg) => setStatusText(msg)
     );
     setGeneratedDocxBlob(docxBlob);
   };
@@ -1027,11 +1028,16 @@ export function useCopilotAI(session?: ReportSession | null) {
           if (!nb) return;
           nb.cells.forEach((c: any, idx: number) => {
             const textOutputs: any[] = [];
+            const MAX_TEXT_LEN = 5000;
             c.outputs?.forEach((o: any) => {
               if (o.type === 'text') {
-                textOutputs.push({ type: 'text', content: o.content });
+                let content = o.content || '';
+                if (content.length > MAX_TEXT_LEN) content = content.substring(0, MAX_TEXT_LEN) + '\n...[OUTPUT TRUNCATED]';
+                textOutputs.push({ type: 'text', content });
               } else if (o.type === 'html' && o.fallbackText) {
-                textOutputs.push({ type: 'text', content: o.fallbackText });
+                let content = o.fallbackText || '';
+                if (content.length > MAX_TEXT_LEN) content = content.substring(0, MAX_TEXT_LEN) + '\n...[OUTPUT TRUNCATED]';
+                textOutputs.push({ type: 'text', content });
               }
             });
             const imageOutputs = c.outputs?.filter((o: any) => o.type === 'image');
@@ -1056,6 +1062,10 @@ export function useCopilotAI(session?: ReportSession | null) {
                 imageCounter++;
                 return `[Image Omitted: HTML_Image_${imageCounter}]`;
               });
+              const MAX_SOURCE_LEN = 30000;
+              if (cleanSource.length > MAX_SOURCE_LEN) {
+                cleanSource = cleanSource.substring(0, MAX_SOURCE_LEN) + '\n...[SOURCE TRUNCATED]';
+              }
             }
             allCells.push({
               notebookIndex: nbIdx,
@@ -1215,9 +1225,10 @@ export function useCopilotAI(session?: ReportSession | null) {
       setProgress(100);
       setStatusText('Selesai!');
 
-      if (sessionArg) {
+      const liveSession = sessionArg ? useAppStore.getState().sessions.find((s: any) => s.id === sessionArg.id) || sessionRef.current || sessionArg : null;
+      if (liveSession) {
         store.saveSession({
-          ...sessionArg,
+          ...liveSession,
           title: metadata.judulPertemuan,
           aiData: accumulatedAiData,
         });
@@ -1360,9 +1371,10 @@ export function useCopilotAI(session?: ReportSession | null) {
       );
       setStatusText('Selesai!');
 
-      if (sessionArg) {
+      const liveSession = sessionArg ? useAppStore.getState().sessions.find((s: any) => s.id === sessionArg.id) || sessionRef.current || sessionArg : null;
+      if (liveSession) {
         store.saveSession({
-          ...sessionArg,
+          ...liveSession,
           title: metadata.judulPertemuan,
           aiData: accumulatedAiData,
         });

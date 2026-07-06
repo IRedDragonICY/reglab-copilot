@@ -357,7 +357,7 @@ export function ScheduleManager() {
                           <span className="w-2 h-2 bg-[#2EA043] rounded-full" />
                         </div>
                         <span className="font-mono text-[10px] text-[#6E6E6E] ml-2">
-                          crawler ~ gemini-flash
+                          crawler ~ gemini-3.5-flash
                         </span>
                       </div>
                       <div className="flex items-center gap-1.5">
@@ -627,14 +627,14 @@ export function ScheduleManager() {
                 </p>
                 <div className="flex gap-3">
                   <button
-                    onClick={() => setIsAddModalOpen(true)}
+                    onClick={() => startAddManual()}
                     className="h-9 px-4 flex items-center gap-2 text-[12px] font-medium text-[#EDEDED] bg-[#21262d] border border-[#30363d] hover:bg-[#30363d] transition-colors rounded-sm"
                   >
                     <Plus className="w-4 h-4" />
                     <span>Add Manually</span>
                   </button>
                   <button
-                    onClick={() => setIsPasteModalOpen(true)}
+                    onClick={() => setShowConfig(true)}
                     className="h-9 px-4 flex items-center gap-2 text-[12px] font-medium text-[#EDEDED] bg-[#2EA043] hover:bg-[#238636] transition-colors rounded-sm shadow-[0_0_15px_rgba(46,160,67,0.15)] hover:shadow-[0_0_20px_rgba(46,160,67,0.25)]"
                   >
                     <span>Paste Text</span>

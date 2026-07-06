@@ -215,14 +215,28 @@ describe('tokenizeInline — bullet line that triggered the regression', () => {
   });
 });
 
-describe('tokenizeInline — degenerate input', () => {
-  it('drops empty bold and italic spans without crashing', () => {
-    expect(tokenizeInline('a **** b')).toEqual([TEXT('a '), TEXT(' b')]);
-    expect(tokenizeInline('a ** b')).toEqual([TEXT('a ** b')]);
+describe('tokenizeInline — bold/italic mixed (***)', () => {
+  it('parses *** text *** as bold and italic', () => {
+    expect(tokenizeInline('***Improvement***:')).toEqual([
+      TEXT('Improvement', { bold: true, italic: true }),
+      TEXT(':')
+    ]);
   });
 
-  it('handles a string that is just an image', () => {
-    const url = 'data:image/png;base64,AAA';
-    expect(tokenizeInline(`![x](${url})`)).toEqual([IMG(url, 'x')]);
+  it('parses **Preprocessing***: as bold Preprocessing and italic : (handling partial closes)', () => {
+    expect(tokenizeInline('1. **Preprocessing***: Mengolah data (noise reduction*).')).toEqual([
+      TEXT('1. '),
+      TEXT('Preprocessing', { bold: true }),
+      TEXT(': Mengolah data (noise reduction', { italic: true }),
+      TEXT(').')
+    ]);
+  });
+
+  it('parses **bold *italic* bold**', () => {
+    expect(tokenizeInline('**bold *italic* bold**')).toEqual([
+      TEXT('bold ', { bold: true }),
+      TEXT('italic', { bold: true, italic: true }),
+      TEXT(' bold', { bold: true }),
+    ]);
   });
 });

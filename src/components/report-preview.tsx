@@ -250,20 +250,59 @@ function ReportPreviewInner({
             <div className="border border-gray-300 rounded flex flex-col overflow-hidden">
               <div className="p-4 bg-gray-50 overflow-x-auto">
                 <div className="text-sm font-mono text-gray-800">
-                  {cell.source.split('\n').map((line: string, i: number) => (
-                    <div key={i} className="flex">
-                      <span className="text-gray-400 select-none mr-2 w-8 shrink-0 text-right">{i + 1} |</span>
-                      <span className="whitespace-pre-wrap break-words flex-1" dangerouslySetInnerHTML={{ __html: highlightPython(line) }} />
-                    </div>
-                  ))}
+                  {(() => {
+                     let lines = cell.source.split('\n');
+                     const MAX_LINES = 100;
+                     let truncated = false;
+                     if (lines.length > MAX_LINES) {
+                       lines = [
+                         ...lines.slice(0, 80),
+                         '',
+                         '... [CODE TRUNCATED / TERPOTONG KARENA TERLALU PANJANG] ...',
+                         '',
+                         ...lines.slice(-15)
+                       ];
+                       truncated = true;
+                     }
+                     return lines.map((line: string, i: number) => {
+                       const isTruncationMsg = truncated && i >= 80 && i <= 82;
+                       const isFooter = truncated && i > 82;
+                       let actualLineNum = i + 1;
+                       if (isFooter) {
+                          actualLineNum = cell.source.split('\n').length - (lines.length - 1 - i);
+                       }
+                       const lineNumStr = isTruncationMsg ? '    | ' : String(actualLineNum).padStart(3, ' ') + ' | ';
+                       const safeLine = line.length > 2000 ? line.substring(0, 2000) + '... [TRUNCATED]' : line;
+                       return (
+                         <div key={i} className="flex">
+                           <span className="text-gray-400 select-none mr-2 w-8 shrink-0 text-right whitespace-pre">{lineNumStr}</span>
+                           <span className="whitespace-pre-wrap break-words flex-1" dangerouslySetInnerHTML={{ __html: highlightPython(safeLine) }} />
+                         </div>
+                       );
+                     });
+                  })()}
                 </div>
               </div>
               
               {textOutputs.length > 0 && (
                 <div className="border-t border-gray-300 p-4 bg-white overflow-x-auto">
-                  {textOutputs.map((out: any, oIdx: number) => (
-                    <pre key={oIdx} className="text-sm font-mono whitespace-pre-wrap text-gray-800">{out.content}</pre>
-                  ))}
+                  {textOutputs.map((out: any, oIdx: number) => {
+                     let lines = out.content.split('\n');
+                     const MAX_LINES = 20;
+                     if (lines.length > MAX_LINES) {
+                       lines = [
+                         ...lines.slice(0, 15),
+                         '',
+                         '... [OUTPUT TRUNCATED / TERPOTONG KARENA TERLALU PANJANG] ...',
+                         '',
+                         ...lines.slice(-5)
+                       ];
+                     }
+                     const truncatedContent = lines.map((line: string) => line.length > 1000 ? line.substring(0, 1000) + '... [TRUNCATED]' : line).join('\n');
+                     return (
+                       <pre key={oIdx} className="text-sm font-mono whitespace-pre-wrap text-gray-800">{truncatedContent}</pre>
+                     );
+                  })}
                 </div>
               )}
 

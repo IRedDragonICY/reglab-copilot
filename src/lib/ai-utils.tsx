@@ -9,7 +9,7 @@ export async function extractScheduleFromText(inputText: string, apiKey: string)
   ${inputText}`;
 
   const response = await ai.models.generateContent({
-    model: 'gemini-flash-latest', // DO NOT CHANGE: ini gemini 3.0 flash!
+    model: 'gemini-3.5-flash', 
     contents: [{ role: 'user', parts: [{ text: prompt }] }],
     config: {
       responseMimeType: 'application/json',
@@ -75,10 +75,10 @@ export async function extractModuleFromPdf(base64Data: string, apiKey: string, o
     required: ["pertemuan_data"]
   };
 
-  onLog?.("[INIT] Memulai koneksi stream dengan Gemini 3.0 Flash...");
+  onLog?.("[INIT] Memulai koneksi stream dengan Gemini 3.5 Flash...");
 
   const stream = await ai.models.generateContentStream({
-    model: 'gemini-flash-latest', // DO NOT CHANGE: ini gemini 3.0 flash!
+    model: 'gemini-3.5-flash', 
     contents: [
       {
         role: 'user',

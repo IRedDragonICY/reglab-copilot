@@ -9,6 +9,7 @@ import { FONT_CALIBRI, MAX_IMG_WIDTH, PALETTE } from './constants';
 import { sanitizeText } from './text';
 import { toImageRun } from './image';
 import { codeTable as buildCodeTable } from './code';
+import { yieldThread } from "../utils";
 import { preprocessMathToImages } from '../parser';
 
 /**
@@ -108,11 +109,10 @@ export async function parseMarkdownToParagraphs(
           bold: options.prefixBold ?? false,
           size: headingSize,
           font: FONT_CALIBRI,
-        }),
+        })
       );
       isFirstLine = false;
     }
-
     for (const token of tokens) {
       if (token.kind === 'image') {
         const run = await renderImageToken(token.url, headingSize, isHeadingBold);
@@ -129,10 +129,9 @@ export async function parseMarkdownToParagraphs(
           italics: token.italic,
           size: headingSize,
           font: FONT_CALIBRI,
-        }),
+        })
       );
     }
-
     elements.push(
       new Paragraph({
         children: textRuns,
@@ -141,6 +140,7 @@ export async function parseMarkdownToParagraphs(
         indent: indent ? { left: indent } : undefined,
       }),
     );
+    await yieldThread();
   }
 
   // Flush a still-open code block at EOF.
@@ -149,6 +149,7 @@ export async function parseMarkdownToParagraphs(
     elements.push(new Paragraph({ spacing: { after: 200 } }));
   }
 
+  return elements;
   return elements;
 }
 
@@ -202,56 +203,7 @@ export function tokenizeInline(input: string): InlineToken[] {
   );
 
   // ---- 2. Tokenize bold/italic on the placeheld string --------------------
-  type StyledRun = { text: string; bold: boolean; italic: boolean };
-  const styledRuns: StyledRun[] = [];
-
-  let i = 0;
-  let buffer = '';
-  let bold = false;
-  let italic = false;
-
-  const flushBuffer = () => {
-    if (buffer.length === 0) return;
-    styledRuns.push({ text: buffer, bold, italic });
-    buffer = '';
-  };
-
-  while (i < placeheld.length) {
-    const ch = placeheld[i];
-
-    if (ch === '*') {
-      const isDouble = placeheld[i + 1] === '*';
-      const delim = isDouble ? '**' : '*';
-      const closeAt = findClosingDelim(placeheld, i + delim.length, delim);
-
-      if (closeAt === -1) {
-        // No matching close — emit the asterisk(s) as literal text.
-        buffer += delim;
-        i += delim.length;
-        continue;
-      }
-
-      // Real delimiter pair: flush the prefix, toggle the style, and
-      // continue scanning the inner span. A nested same-delimiter is
-      // disallowed by `findClosingDelim`'s lookahead, so this is safe.
-      flushBuffer();
-      if (isDouble) bold = true; else italic = true;
-      i += delim.length;
-
-      // Recurse over the inner span with current style flags applied.
-      const inner = placeheld.slice(i, closeAt);
-      const innerTokens = tokenizeStyledSpan(inner, bold, italic);
-      styledRuns.push(...innerTokens);
-
-      if (isDouble) bold = false; else italic = false;
-      i = closeAt + delim.length;
-      continue;
-    }
-
-    buffer += ch;
-    i += 1;
-  }
-  flushBuffer();
+  const styledRuns = tokenizeStyledSpan(placeheld, false, false);
 
   // ---- 3. Expand placeholders back to image / text tokens -----------------
   const out: InlineToken[] = [];
@@ -290,35 +242,26 @@ export function tokenizeInline(input: string): InlineToken[] {
 
 /**
  * Find the next occurrence of `delim` in `s` starting at `from`, but
- * skip occurrences that are part of a longer delimiter run. For
- * `delim === '*'` we must not match a `**` close, and for `**` we must
- * not match a single `*`. Returns -1 if not found.
+ * skip occurrences that are part of a longer delimiter run.
+ * Returns -1 if not found.
  */
-function findClosingDelim(s: string, from: number, delim: '*' | '**'): number {
+function findClosingDelim(s: string, from: number, delim: '*' | '**' | '***'): number {
   let i = from;
   while (i < s.length) {
     if (s[i] !== '*') { i += 1; continue; }
 
-    if (delim === '*') {
-      // A single '*' close requires the previous char not to be '*' and
-      // the next char not to be '*'.
-      const prev = s[i - 1];
-      const next = s[i + 1];
-      if (prev !== '*' && next !== '*') return i;
-      // Skip the whole run of asterisks.
-      while (i < s.length && s[i] === '*') i += 1;
-      continue;
-    }
+    let runLen = 1;
+    while (s[i + runLen] === '*') runLen++;
 
-    // delim === '**': need exactly two consecutive '*'.
-    if (s[i + 1] === '*') {
-      // Make sure it's not the start of '***' (treat as no-match here).
-      const after = s[i + 2];
-      if (after !== '*') return i;
-      while (i < s.length && s[i] === '*') i += 1;
-      continue;
+    if (delim === '***') {
+      if (runLen >= 3) return i;
+    } else if (delim === '**') {
+      if (runLen >= 2) return i;
+    } else {
+      if (runLen === 1) return i;
+      if (runLen >= 3) return i; // can close a single star
     }
-    i += 1;
+    i += runLen;
   }
   return -1;
 }
@@ -349,20 +292,49 @@ function tokenizeStyledSpan(
   while (i < span.length) {
     const ch = span[i];
     if (ch === '*') {
-      const isDouble = span[i + 1] === '*';
-      const delim = isDouble ? '**' : '*';
-      const closeAt = findClosingDelim(span, i + delim.length, delim);
+      let runLen = 1;
+      while (span[i + runLen] === '*') runLen++;
+
+      let delimLength = runLen >= 3 ? 3 : runLen;
+      let delim = delimLength === 3 ? '***' : delimLength === 2 ? '**' : '*';
+
+      let searchFrom = i + runLen;
+      let closeAt = findClosingDelim(span, searchFrom, delim as any);
+
+      if (closeAt === -1 && delim === '***') {
+        delimLength = 2;
+        delim = '**';
+        closeAt = findClosingDelim(span, searchFrom, delim as any);
+      }
+
+      if (closeAt === -1 && delim === '**') {
+        delimLength = 1;
+        delim = '*';
+        closeAt = findClosingDelim(span, searchFrom, delim as any);
+      }
+
       if (closeAt === -1) {
         buffer += delim;
-        i += delim.length;
+        i += delimLength;
         continue;
       }
+
       flush();
-      if (isDouble) bold = true; else italic = true;
-      const inner = span.slice(i + delim.length, closeAt);
+      const isTriple = delim === '***';
+      const isDouble = delim === '**';
+
+      if (isTriple) { bold = true; italic = true; }
+      else if (isDouble) { bold = true; }
+      else { italic = true; }
+
+      const inner = span.slice(i + delimLength, closeAt);
       out.push(...tokenizeStyledSpan(inner, bold, italic));
-      if (isDouble) bold = parentBold; else italic = parentItalic;
-      i = closeAt + delim.length;
+
+      if (isTriple) { bold = parentBold; italic = parentItalic; }
+      else if (isDouble) { bold = parentBold; }
+      else { italic = parentItalic; }
+
+      i = closeAt + delimLength;
       continue;
     }
     buffer += ch;

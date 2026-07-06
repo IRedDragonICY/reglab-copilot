@@ -83,7 +83,11 @@ export function useReportDownload(ctx: ReportDownloadCtx): {
   const download = async () => {
     const c = ctxRef.current;
     let blob = c.generatedDocxBlob;
+    let toastId: string | number | undefined;
+
     if (!blob && c.aiPreviewData) {
+      toastId = toast.loading('Mempersiapkan dokumen, mohon tunggu sebentar...', { duration: 100000 });
+      await new Promise(r => setTimeout(r, 100));
       let logoBlob: Blob | null = null;
       try {
         const logoRes = await fetch('/logo-uad.png');
@@ -107,9 +111,14 @@ export function useReportDownload(ctx: ReportDownloadCtx): {
         c.modulContext,
         c.postTest,
         c.parsedNotebooks.length,
+        (msg) => {
+          if (toastId) toast.loading(msg, { id: toastId });
+        }
       );
       c.setGeneratedDocxBlob(blob);
     }
+
+    if (toastId) toast.dismiss(toastId);
 
     if (!blob) {
       toast.error('Please generate the report first before downloading.');

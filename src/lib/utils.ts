@@ -16,3 +16,7 @@ export function generateId(): string {
     return v.toString(16);
   });
 }
+
+export function yieldThread(): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, 0));
+}
