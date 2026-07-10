@@ -1,4 +1,5 @@
-import { useEffect, useState, useRef } from 'react';
+const fs = require('fs');
+const content = `import { useEffect, useState, useRef } from 'react';
 import { useTheme } from 'next-themes';
 import { useAppStore } from '@/lib/store';
 import { HomeTab } from '@/components/home-tab';
@@ -27,7 +28,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { cn } from '@/lib/utils';
-
+import { useReportDownload } from '@/hooks/use-report-download';
 
 function MenuItem({ label }: { label: string }) {
   return (
@@ -60,25 +61,25 @@ function SortableTab({ tab, isActive, onClick, onClose }: any) {
       {...attributes}
       {...listeners}
       onClick={onClick}
-      className={`group relative flex items-center gap-2 pl-3 pr-2 h-full cursor-pointer select-none min-w-[160px] max-w-[240px] border-r border-[#1F1F1F] ${
+      className={\`group relative flex items-center gap-2 pl-3 pr-2 h-full cursor-pointer select-none min-w-[160px] max-w-[240px] border-r border-[#1F1F1F] \${
         isActive
           ? 'bg-[#0A0A0A] text-[#EDEDED]'
           : 'bg-[#0C0C0C] text-[#888888] hover:bg-[#111111] hover:text-[#CCCCCC]'
-      }`}
+      }\`}
     >
       {/* Active top accent */}
       <span
-        className={`absolute top-0 left-0 right-0 h-[2px] ${
+        className={\`absolute top-0 left-0 right-0 h-[2px] \${
           isActive ? 'bg-[#2F81F7]' : 'bg-transparent'
-        }`}
+        }\`}
       />
       {tab.type === 'home' ? (
         <Home className="w-3.5 h-3.5 shrink-0 text-[#A1A1A1]" />
       ) : (
         <FileText
-          className={`w-3.5 h-3.5 shrink-0 ${
+          className={\`w-3.5 h-3.5 shrink-0 \${
             isActive ? 'text-[#2F81F7]' : 'text-[#6E6E6E]'
-          }`}
+          }\`}
         />
       )}
       <span className="font-mono text-[11px] truncate flex-1">{tab.title}</span>
@@ -89,9 +90,9 @@ function SortableTab({ tab, isActive, onClick, onClose }: any) {
             onClose();
           }}
           onPointerDown={(e) => e.stopPropagation()}
-          className={`shrink-0 w-4 h-4 flex items-center justify-center hover:bg-[#222222] transition-all rounded-sm ${
+          className={\`shrink-0 w-4 h-4 flex items-center justify-center hover:bg-[#222222] transition-all rounded-sm \${
             isActive ? 'opacity-70' : 'opacity-0 group-hover:opacity-70'
-          }`}
+          }\`}
         >
           <X className="w-3 h-3" />
         </button>
@@ -112,7 +113,7 @@ export default function AppMain() {
     ? activeSession?.title || 'Untitled Report'
     : '';
 
-  
+  const { download } = useReportDownload(activeSession);
 
   // Resize logic for Copilot Sidebar
   const isSidebarVisible = store.isCopilotOpen;
@@ -125,7 +126,7 @@ export default function AppMain() {
     setIsDragging(true);
     startXRef.current = e.clientX;
     startWidthRef.current = sidebarWidth;
-    (e.target as Element).setPointerCapture(e.pointerId);
+    e.target.setPointerCapture(e.pointerId);
   };
 
   const handlePointerMove = (e: React.PointerEvent) => {
@@ -137,7 +138,7 @@ export default function AppMain() {
 
   const handlePointerUp = (e: React.PointerEvent) => {
     setIsDragging(false);
-    (e.target as Element).releasePointerCapture(e.pointerId);
+    e.target.releasePointerCapture(e.pointerId);
   };
 
   const dragHandleProps = {
@@ -187,11 +188,11 @@ export default function AppMain() {
               <div className="relative">
                 <button
                   onClick={() => setFileMenuOpen(!fileMenuOpen)}
-                  className={`px-2 py-0.5 text-[13px] rounded-sm transition-colors ${
+                  className={\`px-2 py-0.5 text-[13px] rounded-sm transition-colors \${
                     fileMenuOpen
                       ? 'bg-[#1C1C1C] text-white'
                       : 'text-[#EDEDED] hover:bg-[#1A1A1A]'
-                  }`}
+                  }\`}
                 >
                   File
                 </button>
@@ -225,7 +226,7 @@ export default function AppMain() {
                       <div className="my-1 border-t border-[#1F1F1F]" />
                       <button
                         onClick={() => {
-                          window.dispatchEvent(new Event('export-docx'));
+                          download();
                           setFileMenuOpen(false);
                         }}
                         disabled={!isDocView}
@@ -269,11 +270,11 @@ export default function AppMain() {
               {isDocView && (
                 <button
                   onClick={() => store.toggleCopilot()}
-                  className={`flex items-center gap-1.5 px-3 h-6 rounded-sm text-[11px] font-medium transition-colors ${
+                  className={\`flex items-center gap-1.5 px-3 h-6 rounded-sm text-[11px] font-medium transition-colors \${
                     store.isCopilotOpen
                       ? 'bg-[#1C1C1C] text-[#EDEDED] border border-[#2F81F7]/30'
                       : 'bg-[#2F81F7] text-white hover:bg-[#408BF8] border border-transparent'
-                  }`}
+                  }\`}
                 >
                   <Wand2 className="w-3 h-3" />
                   COPILOT
@@ -328,9 +329,9 @@ export default function AppMain() {
         ============================================================= */}
         <main className="flex-1 overflow-hidden relative flex bg-[#0A0A0A]">
           <div
-            className={`flex-1 p-3 overflow-hidden ${
+            className={\`flex-1 p-3 overflow-hidden \${
               store.activeTab === 'home' ? 'block' : 'hidden'
-            }`}
+            }\`}
           >
             <HomeTab />
           </div>
@@ -365,7 +366,7 @@ export default function AppMain() {
       {isSidebarVisible && (
         <div
           className="shrink-0 flex flex-row relative h-full bg-[#0A0A0A] z-40 border-l border-[#1F1F1F]"
-          style={{ width: `${sidebarWidth}px` }}
+          style={{ width: \`\${sidebarWidth}px\` }}
         >
           <div
             {...dragHandleProps}
@@ -398,3 +399,5 @@ export default function AppMain() {
     </div>
   );
 }
+`;
+fs.writeFileSync('src/components/AppMain.tsx', content);

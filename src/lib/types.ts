@@ -75,6 +75,7 @@ export interface ReportMetadata extends SessionMetadata {
 export interface CellAnalysis {
   notebookIndex?: number;
   cellIndex?: number;
+  imageCategory?: string;
   imageIndex?: number;
   section: 'implementasi' | 'post_test';
   caption: string;

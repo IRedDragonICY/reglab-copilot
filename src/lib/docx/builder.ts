@@ -404,7 +404,8 @@ export async function generateDocx(
     await yieldThread();
   }
 
-  const usedImplImages = new Set<number>();
+  const usedImplImages = new Set<string>();
+  const usedPostTestImages = new Set<string>();
   if (cellAnalysesArray) {
     for (const analysis of cellAnalysesArray) {
       if (analysis.section === 'implementasi' && analysis.imageIndex !== undefined) {
@@ -444,7 +445,7 @@ export async function generateDocx(
     }
   }
   
-  const unusedImplImages = implImages.filter((_, idx) => !usedImplImages.has(idx));
+  const unusedImplImages = implImages.filter((_, idx) => !usedImplImages.has('implementasi-' + idx) && !usedPostTestImages.has('implementasi-' + idx));
   if (unusedImplImages.length > 0) {
     const orphans = findUnanalyzedImages(
       implImages,
@@ -602,13 +603,17 @@ export async function generateDocx(
       await yieldThread();
     }
     
-    const usedPostTestImages = new Set<number>();
+    const usedPostTestImages = new Set<string>();
     if (cellAnalysesArray) {
       for (const analysis of cellAnalysesArray) {
         if (analysis.section === 'post_test' && analysis.imageIndex !== undefined) {
-          const img = postTestImages[analysis.imageIndex];
+          const categoryToUse = analysis.imageCategory || 'post_test';
+          let img;
+          if (categoryToUse === 'implementasi') img = implImages[analysis.imageIndex];
+          else if (categoryToUse === 'post_test') img = postTestImages[analysis.imageIndex];
+          else if (categoryToUse === 'pre_test') img = preTestImages[analysis.imageIndex];
           if (img) {
-            usedPostTestImages.add(analysis.imageIndex);
+            usedPostTestImages.add((analysis.imageCategory || 'post_test') + '-' + analysis.imageIndex);
             bodyChildren.push(
               new Paragraph({
                 children: [new TextRun({ text: String(analysis.caption).replace(/['"]/g, ''), bold: true, size: 22, font: 'Calibri' })],
@@ -627,7 +632,7 @@ export async function generateDocx(
     }
       await yieldThread();
 
-    const unusedPostTestImages = postTestImages.filter((_, idx) => !usedPostTestImages.has(idx));
+    const unusedPostTestImages = postTestImages.filter((_, idx) => !usedPostTestImages.has('post_test-' + idx) && !usedImplImages.has('post_test-' + idx));
     if (unusedPostTestImages.length > 0) {
       bodyChildren.push(
         new Paragraph({

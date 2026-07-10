@@ -168,6 +168,7 @@ interface AppState {
   openTabs: { id: string; title: string; type: 'home' | 'session' }[];
   openSessionTab: (session: ReportSession) => void;
   closeTab: (tabId: string) => void;
+  reorderTabs: (newTabs: { id: string; title: string; type: "home" | "session" }[]) => void;
 
   saveSession: (session: ReportSession) => void;
   deleteSession: (sessionId: string) => void;
@@ -272,8 +273,22 @@ const idbStorage = {
     }
     return parsed;
   },
+  
+  
   setItem: async (name: string, value: any): Promise<void> => {
-    await idbSet(name, value);
+    const win = window as any;
+    if (win._idbWriteTimeout) {
+      clearTimeout(win._idbWriteTimeout);
+    }
+    win._idbWriteTimeout = setTimeout(async () => {
+      try {
+        await idbSet(name, value);
+      } catch (e) {
+        console.error('IDB set failed', e);
+      }
+    }, 500);
+    // Resolve immediately to not block Zustand's persist queue
+    return Promise.resolve();
   },
   removeItem: async (name: string): Promise<void> => {
     await idbDel(name);
@@ -393,6 +408,7 @@ export const useAppStore = create<AppState>()(
         });
       },
       
+      reorderTabs: (newTabs) => set({ openTabs: newTabs }),
       closeTab: (tabId) => {
         set((state) => {
           const newTabs = state.openTabs.filter(t => t.id !== tabId);

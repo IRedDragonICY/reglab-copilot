@@ -40,11 +40,11 @@ const ANALYSIS = (
 
 describe('findUnanalyzedImages', () => {
   const getClaimedIndexes = (analyses: CellAnalysis[] | undefined, section: 'implementasi'|'post_test') => {
-    const claims = new Set<number>();
+    const claims = new Set<string>();
     if (!analyses) return claims;
     for (const a of analyses) {
       if (a.section === section && typeof a.imageIndex === 'number') {
-        claims.add(a.imageIndex);
+        claims.add((a.imageCategory || a.section) + '-' + a.imageIndex);
       }
     }
     return claims;

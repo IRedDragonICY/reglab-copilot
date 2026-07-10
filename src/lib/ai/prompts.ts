@@ -66,19 +66,48 @@ export function buildGenerationPrompt(ctx: GenerationPromptCtx): string {
         - Apa yang BERUBAH dari step sebelumnya.
         - KHUSUS GRAFIK / VISUALISASI DATA (misal Clustering, Regression, dll): Anda WAJIB menganalisis MENGAPA grafik tersebut terlihat seperti itu. Jelaskan pola distribusi data, area keputusan (decision boundary), indikasi overfitting/underfitting, anomali (misal: "kenapa segmentasinya terlihat acak/amburadul? Apakah nilai K terlalu kecil?"), dan dampak parameter model terhadap hasil visualisasi tersebut layaknya analisis mahasiswa yang kritis.
         - Untuk Post-Test, kaitkan setiap screenshot ke nomor soal Post-Test tertentu dan jelaskan bagian mana dari soal yang dijawab oleh screenshot tersebut.
+        - WAJIB MENGANALISIS DIAGRAM / FLOWCHART / DRAWIO: Jika gambar berisi flowchart, drawio, bagan, atau skema manual, Anda TETAP WAJIB membaca dan menjabarkan alurnya ke teks penjelasan. JANGAN menolak membaca diagram!
+        - JAWAB SEMUA SOAL: Anda WAJIB memikirkan dan menuliskan jawaban yang tepat untuk semua soal Pre-Test dan Post-Test di object \`answers\`. JANGAN dibiarkan kosong atau hanya mengulang soalnya saja.
 
-        ANTI AI-SLOP & LANGUAGE RULES (DILARANG KERAS):
-        1. Jangan gunakan kalimat pembuka generic / boilerplate. Daftar frase yang DILARANG dipakai sebagai pembuka:
-           - "Pada gambar di atas dapat dilihat..."
-           - "Seperti yang terlihat pada gambar..."
-           - "Berdasarkan tampilan di atas..."
-           - "Gambar di atas menunjukkan..."
-           - "Dapat disimpulkan bahwa..."
-           - "Output dari kode di atas adalah..."
-           Sebagai gantinya, langsung sebut detail konkret yang teramati di screenshot (file, baris, identifier, warna, nilai, urutan), atau sebut alur logika kodenya. Tone laporan harus terdengar NATURAL seperti tulisan mahasiswa yang benar-benar mengerjakan, bukan teks template.
-        2. NATURAL TECHNICAL TRANSLATIONS: DILARANG KERAS menerjemahkan istilah baku IT / Data Science ke dalam bahasa Indonesia secara harfiah. Contoh yang DILARANG: "Matriks Kebingungan" (Wajib: "Confusion Matrix"), "Hutan Acak" (Wajib: "Random Forest"), "Pohon Keputusan" (Wajib: "Decision Tree"). Gunakan istilah Bahasa Inggris aslinya untuk hal-hal teknis.
-        3. FORMATTING ISTILAH ASING: Sesuai kaidah penulisan jurnal ilmiah bahasa Indonesia, semua istilah bahasa Inggris/asing WAJIB dicetak miring (italic). Contoh: "*Confusion Matrix*", "*Early Stopping*", "*Epoch*", "*Hyperparameter Tuning*". Gunakan format markdown \`*teks*\` atau \`_teks_\` untuk memiringkan istilah tersebut.
-        4. KURANGI KOSAKATA TERLALU BAKU/PUITIS: Hindari kata-kata transisi atau kesimpulan yang terlalu kaku dan berlebihan. Ubah gaya bahasa agar lebih membumi. Contoh yang DILARANG: "memberikan wawasan mendalam" (Ubah menjadi "memberikan pemahaman baru"). Contoh lain yang DILARANG: "mengonfirmasi ketangguhan model" (Ubah menjadi "menunjukkan bahwa model cukup baik"). Tone harus rileks, analitis, tapi tetap akademis mahasiswa.
+        ANTI AI-SLOP & LANGUAGE RULES (ATURAN KETAT PENULISAN):
+        1. HILANGKAN KALIMAT PEMBUKA GENERIC/META-REFERENSI:
+           DILARANG KERAS merujuk pada "gambar", "kode di atas", atau "potongan kode berikut".
+           - JANGAN GUNAKAN: "Pada gambar di atas dapat dilihat...", "Berdasarkan output tersebut...", "Gambar ini menunjukkan...", "Potongan kode di atas berfungsi untuk..."
+           - GUNAKAN GAYA LANGSUNG (ACTIVE/DIRECT NARRATIVE): Langsung jelaskan subjeknya.
+             Contoh Benar: "Fungsi \`generate_ngrams\` digunakan untuk memecah teks menjadi potongan unigram."
+             Contoh Benar: "Hasil evaluasi menunjukkan akurasi sebesar 46.74% yang mengindikasikan bahwa model..."
+             Tulis layaknya mahasiswa yang sedang menjelaskan hasil kerjanya, fokus pada *apa yang terjadi* dan *mengapa*, bukan *di mana* itu terlihat.
+
+        2. NATURAL TECHNICAL TRANSLATIONS (JANGAN TERJEMAHKAN ISTILAH TEKNIS):
+           DILARANG KERAS menerjemahkan istilah baku IT / Data Science / Computer Vision / NLP ke dalam bahasa Indonesia secara harfiah (harfiah = slop).
+           - CONTOH DILARANG: "Matriks Kebingungan", "Hutan Acak", "Pembekuan", "Lupa Bencana", "Penyesuaian Halus", "Penurunan Gradien", "Kotak Pembatas".
+           - CONTOH WAJIB: "*Confusion Matrix*", "*Random Forest*", "*Freeze*", "*Catastrophic Forgetting*", "*Fine-tuning*", "*Gradient Descent*", "*Bounding Box*".
+           Gunakan istilah aslinya (Bahasa Inggris) agar relevan dengan konteks teknis Informatika.
+
+        3. FORMATTING ISTILAH ASING & IDENTIFIER KODE (WAJIB KONSISTEN):
+           - ISTILAH ASING: Semua istilah bahasa Inggris/asing WAJIB dicetak miring (italic). Gunakan markdown \`*teks*\` atau \`_teks_\`. (Contoh: *hyperparameter*, *overfitting*, *layer*, *epoch*).
+           - IDENTIFIER KODE: Semua nama fungsi, variabel, library, tipe data, file, atau nilai syntax WAJIB diformat sebagai inline code dengan backtick (\`kode\`). (Contoh: \`base_model.trainable = True\`, \`generate_ngrams()\`, \`CountVectorizer\`).
+           Perpaduan yang benar: "Fungsi \`re.findall()\` digunakan untuk mengekstrak entitas melalui proses *pattern matching*."
+
+        4. GAYA BAHASA SEMI-FORMAL (TIDAK BIPOLAR):
+           Jangan terlalu kaku akademis di satu sisi, tapi JANGAN menggunakan bahasa gaul (slang) tongkrongan di sisi lain.
+           - DILARANG pakai kata: "pas", "ngecek", "jelek", "basa-basi", "ngasih gambaran", "ngitung seberapa capek".
+           - GUNAKAN: "ketika", "mengukur/memeriksa", "semakin buruk / menurun performanya", "memberikan gambaran", "menghitung perbaikan manual".
+           Tone harus Semi-Formal Laporan Praktikum yang natural, bukan gaya AI kaku, dan bukan gaya chat santai.
+
+        5. STRUKTUR PARAGRAF NATURAL (HINDARI POLA ROBOTIK):
+           - Kurangi ketergantungan pada bullet-points bertingkat (nested lists) yang terlalu rapi. 
+           - Rangkai analisis ke dalam 2-3 paragraf naratif yang mengalir seperti tulisan manusia.
+           - HINDARI template pembuka AI seperti: "Proses implementasi praktikum X dilakukan melalui langkah-langkah sistematis berikut:"
+           - Variasikan awal kalimat. Jangan selalu "Fungsi X digunakan untuk...". Gunakan variasi pasif santai seperti: "Pada langkah ini, kita melakukan import...", "Selanjutnya, dataset dibagi menjadi...", atau "Model kemudian dijalankan...".
+
+        6. ANALOGI TEKNIS YANG MEMBUMI:
+           JANGAN menggunakan analogi metaforis atau terkesan dibuat-buat agar santai. 
+           (Contoh dilarang: "TER menghitung seberapa capek manusia", "kata basa-basi").
+           Gunakan penjelasan teknis nyata: "TER menghitung seberapa banyak perbaikan manual yang diperlukan terhadap hasil mesin agar sama dengan referensi."
+
+        7. TAMBAHKAN PENGALAMAN TEKNIS PRAKTIKAL (JIKA ADA):
+           Di bagian Analisis Hasil / Ulasan Praktikum, selipkan opini pengalaman teknis/kendala praktikal yang natural dialami mahasiswa (misal: lamanya proses training, perlunya menyesuaikan batch size karena memori GPU/Colab, dsb) jika relevan, agar tidak hanya berisi evaluasi teori metrik saja.
 
         MULTI-TURN BATCH PROCESSING (CRITICAL):
         TOTAL GAMBAR/VISUAL YANG DIKIRIMKAN ADALAH: ${ctx.totalImages} gambar.

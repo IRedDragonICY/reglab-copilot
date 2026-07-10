@@ -47,7 +47,7 @@ describe('AI function declarations — byte stability', () => {
               "description": "Pertanyaan dan Jawaban Post Test (Tugas). Wajib diisi! Jangan menyingkat soal. Gunakan markdown list jika soal memiliki sub-points seperti Tugas A, Tugas B dll.",
               "properties": {
                 "answers": {
-                  "description": "Jawaban post test detail",
+                  "description": "Jawaban post test / solusi detail. WAJIB DIISI! Jawab semua pertanyaan post test dengan pengetahuan Anda secara mendalam. Jika melibatkan flowchart/diagram, terjemahkan/jelaskan diagram tersebut.",
                   "items": {
                     "type": "STRING"
                   },
@@ -67,6 +67,16 @@ describe('AI function declarations — byte stability', () => {
                       },
                       "explanation": {
                         "description": "Penjelasan natural berbahasa Indonesia (kalimat pasif, gaya laporan mahasiswa) untuk setiap screenshot/sel. WAJIB minimal 2 kalimat dan menyebut detail konkret yang TERLIHAT di gambar. JIKA GAMBAR ADALAH GRAFIK/VISUALISASI (Clustering/KNN dll), Anda WAJIB menganalisis mengapa bentuknya seperti itu (contoh: mengapa boundary acak/amburadul, distribusi data, pengaruh nilai K, overfitting/underfitting). Hindari gaya bahasa puitis/kaku (misal: \\"memberikan pemahaman baru\\" BUKAN \\"memberikan wawasan mendalam\\"). DILARANG menggunakan pembuka generic seperti \\"Pada gambar di atas...\\". Langsung sebut observasi konkret. Khusus post_test jelaskan baris mana di ipynb / kode yang diubah untuk menyelesaikan tantangan/soal tersebut (jangan hanya berikan jawaban).",
+                        "type": "STRING"
+                      },
+                      "imageCategory": {
+                        "description": "Kategori/bucket asal gambar lampiran tersebut diupload. Wajib disesuaikan dengan label [KATEGORI UPLOAD] yang mendahului gambar.",
+                        "enum": [
+                          "pre_test",
+                          "implementasi",
+                          "post_test",
+                          "notebook"
+                        ],
                         "type": "STRING"
                       },
                       "imageIndex": {
@@ -132,6 +142,16 @@ describe('AI function declarations — byte stability', () => {
                         "description": "Caption gambar jika menampilkan image (contoh: \\"Grafik Confusion Matrix\\").",
                         "type": "STRING"
                       },
+                      "imageCategory": {
+                        "description": "Kategori/bucket asal gambar lampiran tersebut diupload. Wajib disesuaikan dengan label [KATEGORI UPLOAD] yang mendahului gambar.",
+                        "enum": [
+                          "pre_test",
+                          "implementasi",
+                          "post_test",
+                          "notebook"
+                        ],
+                        "type": "STRING"
+                      },
                       "imageIndex": {
                         "description": "Index grafik/visualisasi (0-based) dari daftar lampiran yang sedang Anda bahas. JANGAN diisi jika Anda tidak membahas gambar tertentu dalam paragraf ini!",
                         "type": "NUMBER"
@@ -171,7 +191,7 @@ describe('AI function declarations — byte stability', () => {
               "description": "Pertanyaan dan Jawaban Pre Test. Wajib diisi! tidak boleh kosong. Gunakan markdown list jika soal memiliki sub-poin. Jangan menyingkat soal!",
               "properties": {
                 "answers": {
-                  "description": "Jawaban soal pre test",
+                  "description": "Jawaban soal pre test. WAJIB DIISI DENGAN JAWABAN YANG TEPAT! Gunakan pengetahuan Anda untuk memecahkan/menjawab soal.",
                   "items": {
                     "type": "STRING"
                   },

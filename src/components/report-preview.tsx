@@ -252,7 +252,7 @@ function ReportPreviewInner({
                 <div className="text-sm font-mono text-gray-800">
                   {(() => {
                      let lines = cell.source.split('\n');
-                     const MAX_LINES = 100;
+                     const MAX_LINES = 500;
                      let truncated = false;
                      if (lines.length > MAX_LINES) {
                        lines = [
@@ -272,7 +272,7 @@ function ReportPreviewInner({
                           actualLineNum = cell.source.split('\n').length - (lines.length - 1 - i);
                        }
                        const lineNumStr = isTruncationMsg ? '    | ' : String(actualLineNum).padStart(3, ' ') + ' | ';
-                       const safeLine = line.length > 2000 ? line.substring(0, 2000) + '... [TRUNCATED]' : line;
+                       const safeLine = line.length > 15000 ? line.substring(0, 15000) + '... [TRUNCATED]' : line;
                        return (
                          <div key={i} className="flex">
                            <span className="text-gray-400 select-none mr-2 w-8 shrink-0 text-right whitespace-pre">{lineNumStr}</span>
@@ -288,17 +288,17 @@ function ReportPreviewInner({
                 <div className="border-t border-gray-300 p-4 bg-white overflow-x-auto">
                   {textOutputs.map((out: any, oIdx: number) => {
                      let lines = out.content.split('\n');
-                     const MAX_LINES = 20;
+                     const MAX_LINES = 500;
                      if (lines.length > MAX_LINES) {
                        lines = [
-                         ...lines.slice(0, 15),
+                         ...lines.slice(0, 80),
                          '',
                          '... [OUTPUT TRUNCATED / TERPOTONG KARENA TERLALU PANJANG] ...',
                          '',
-                         ...lines.slice(-5)
+                         ...lines.slice(-15)
                        ];
                      }
-                     const truncatedContent = lines.map((line: string) => line.length > 1000 ? line.substring(0, 1000) + '... [TRUNCATED]' : line).join('\n');
+                     const truncatedContent = lines.map((line: string) => line.length > 15000 ? line.substring(0, 15000) + '... [TRUNCATED]' : line).join('\n');
                      return (
                        <pre key={oIdx} className="text-sm font-mono whitespace-pre-wrap text-gray-800">{truncatedContent}</pre>
                      );
@@ -378,14 +378,19 @@ function ReportPreviewInner({
     nextImgIdxII = res.nextImgIdx;
   });
 
-  const usedImplImageIndexes = new Set<number>();
+  const usedImplImageIndexes = new Set<string>();
   cellAnalysesArray?.forEach((analysis: any, aiIdx: number) => {
     if (analysis.section === 'implementasi' && analysis.imageIndex !== undefined) {
-      usedImplImageIndexes.add(analysis.imageIndex);
-      const img = implImages[analysis.imageIndex];
+      const categoryToUse = analysis.imageCategory || 'implementasi';
+      usedImplImageIndexes.add(categoryToUse + '-' + analysis.imageIndex);
+      let img;
+      if (categoryToUse === 'implementasi') img = implImages[analysis.imageIndex];
+      else if (categoryToUse === 'post_test') img = postTestImages[analysis.imageIndex];
+      else if (categoryToUse === 'pre_test') img = preTestImages[analysis.imageIndex];
+      
       if (img && img.dataUrl) {
         implElements.push(
-          <div key={`impl-img-${analysis.imageIndex}-${aiIdx}`} className="mb-8">
+          <div key={`impl-img-${categoryToUse}-${analysis.imageIndex}-${aiIdx}`} className="mb-8">
             <h3 className="font-bold mb-2">{(analysis.caption as string).replace(/['"]/g, '')}</h3>
             <PreviewImage src={img.dataUrl} caption={`Gambar II.${nextImgIdxII++} ${analysis.caption}`} />
             <div className="mt-4 prose prose-sm max-w-none text-gray-900 text-justify">
@@ -411,14 +416,19 @@ function ReportPreviewInner({
     nextImgIdxIII = res.nextImgIdx;
   });
 
-  const usedPostTestImageIndexes = new Set<number>();
+  const usedPostTestImageIndexes = new Set<string>();
   cellAnalysesArray?.forEach((analysis: any, aiIdx: number) => {
     if (analysis.section === 'post_test' && analysis.imageIndex !== undefined) {
-      usedPostTestImageIndexes.add(analysis.imageIndex);
-      const img = postTestImages[analysis.imageIndex];
+      const categoryToUse = analysis.imageCategory || 'post_test';
+      usedPostTestImageIndexes.add(categoryToUse + '-' + analysis.imageIndex);
+      let img;
+      if (categoryToUse === 'implementasi') img = implImages[analysis.imageIndex];
+      else if (categoryToUse === 'post_test') img = postTestImages[analysis.imageIndex];
+      else if (categoryToUse === 'pre_test') img = preTestImages[analysis.imageIndex];
+
       if (img && img.dataUrl) {
         postTestElements.push(
-          <div key={`post-img-${analysis.imageIndex}-${aiIdx}`} className="mb-8">
+          <div key={`post-img-${categoryToUse}-${analysis.imageIndex}-${aiIdx}`} className="mb-8">
             <h3 className="font-bold mb-2">{(analysis.caption as string).replace(/['"]/g, '')}</h3>
             <PreviewImage src={img.dataUrl} caption={`Gambar III.${nextImgIdxIII++} ${analysis.caption}`} />
             <div className="mt-4 prose prose-sm max-w-none text-gray-900 text-justify">
@@ -433,14 +443,14 @@ function ReportPreviewInner({
   if (Array.isArray(cAnalysis)) {
     cAnalysis.forEach(item => {
       if (item.imageIndex !== undefined) {
-        usedImplImageIndexes.add(item.imageIndex);
+        usedImplImageIndexes.add((item.imageCategory || 'implementasi') + '-' + item.imageIndex);
       }
     });
   }
 
-  const finalUnusedImplImages = implImages.filter((_, i) => !usedImplImageIndexes.has(i));
-  const finalUnusedPostTestImages = postTestImages.filter((_, i) => !usedPostTestImageIndexes.has(i));
-
+  const finalUnusedImplImages = implImages.filter((_, i) => !usedImplImageIndexes.has('implementasi-' + i) && !usedPostTestImageIndexes.has('implementasi-' + i));
+  const finalUnusedPostTestImages = postTestImages.filter((_, i) => !usedPostTestImageIndexes.has('post_test-' + i) && !usedImplImageIndexes.has('post_test-' + i));
+  
   const allImageMocks =[
     ...preTestImages.map((_, i) => `Gambar I.${i + 1} Lembar Jawaban Pre-Test`),
     ...finalUnusedImplImages.map((_, i) => `Gambar II.${nextImgIdxII + i} Output Visual / Screenshot`),

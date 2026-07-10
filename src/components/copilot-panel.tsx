@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import ReactMarkdown from 'react-markdown';
 import { useAppStore } from '@/lib/store';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
@@ -156,9 +157,17 @@ const AgentMessage = ({ msg, statusText }: { msg: CopilotMessage; statusText: st
 
           {showThought && (
             <div className="border-t border-[#1F1F1F] bg-[#050505]">
-              <div className="px-3 py-2.5 font-mono text-[11px] text-[#A1A1A1] whitespace-pre-wrap leading-[1.55] max-h-[300px] overflow-y-auto custom-scrollbar">
+              <div className="px-3 py-2.5 font-mono text-[11px] text-[#A1A1A1] leading-[1.55] max-h-[300px] overflow-y-auto custom-scrollbar">
                 {msg.thought ? (
-                  msg.thought
+                  <ReactMarkdown components={{
+                  strong: ({ children }) => <strong className="font-semibold text-[#D1D1D1]">{children}</strong>,
+                  em: ({ children }) => <em className="italic">{children}</em>,
+                  code: ({ children }) => <code className="bg-[#111111] px-1 rounded text-[#D1D1D1]">{children}</code>,
+                  p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+                  ul: ({ children }) => <ul className="list-disc pl-4 mb-2">{children}</ul>,
+                  ol: ({ children }) => <ol className="list-decimal pl-4 mb-2">{children}</ol>,
+                  li: ({ children }) => <li className="mb-1">{children}</li>,
+                }}>{msg.thought}</ReactMarkdown>
                 ) : (
                   <span className="text-[#6E6E6E] animate-pulse">
                     Waiting for model output…
@@ -180,8 +189,18 @@ const AgentMessage = ({ msg, statusText }: { msg: CopilotMessage; statusText: st
       )}
 
       {msg.text && (
-        <div className="border-l-2 border-[#2F81F7] pl-3 pr-1 py-1 text-[13px] leading-relaxed text-[#EDEDED] whitespace-pre-wrap">
-          {msg.text}
+        <div className="border-l-2 border-[#2F81F7] pl-3 pr-1 py-1 text-[13px] leading-relaxed text-[#EDEDED]">
+          <ReactMarkdown components={{
+            strong: ({ children }) => <strong className="font-semibold text-white">{children}</strong>,
+            em: ({ children }) => <em className="italic">{children}</em>,
+            code: ({ children }) => <code className="bg-[#1A1A1A] text-[#2F81F7] px-1 py-0.5 rounded text-[12px]">{children}</code>,
+            pre: ({ children }) => <pre className="bg-[#1A1A1A] p-2 rounded my-2 overflow-x-auto text-[12px]">{children}</pre>,
+            p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+            ul: ({ children }) => <ul className="list-disc pl-4 mb-2">{children}</ul>,
+            ol: ({ children }) => <ol className="list-decimal pl-4 mb-2">{children}</ol>,
+            li: ({ children }) => <li className="mb-1">{children}</li>,
+            a: ({ href, children }) => <a href={href} className="text-[#2F81F7] hover:underline" target="_blank" rel="noreferrer">{children}</a>,
+          }}>{msg.text}</ReactMarkdown>
         </div>
       )}
     </div>

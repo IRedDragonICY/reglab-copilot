@@ -117,12 +117,7 @@ export async function renderNotebookCells(
   for (const { cell, index, notebookIndex } of cells) {
     if (cell.cell_type === 'markdown' && cell.source.trim()) {
       const parsedMd = await parseMarkdownToParagraphs(cell.source);
-      children.push(
-        lightBorderedTable([
-          titledRow('Penjelasan Teks (Markdown)'),
-          contentRow(parsedMd),
-        ]),
-      );
+      children.push(...parsedMd);
       children.push(new Paragraph({ spacing: { after: 200 } }));
       continue;
     }
@@ -176,19 +171,19 @@ export async function renderNotebookCells(
           } else if ((output as any).fallbackText) {
             // Rasterization failed — fall back to plaintext fallback rendering.
             let lines = (output as any).fallbackText.split('\n');
-            const MAX_LINES = 20;
+            const MAX_LINES = 500;
             if (lines.length > MAX_LINES) {
               lines = [
-                ...lines.slice(0, 15),
+                ...lines.slice(0, 80),
                 '',
                 '... [OUTPUT TRUNCATED / TERPOTONG KARENA TERLALU PANJANG] ...',
                 '',
-                ...lines.slice(-5)
+                ...lines.slice(-15)
               ];
             }
             const outputParagraphs = lines.map((line: string) =>
               new Paragraph({
-                children: [new TextRun({ text: sanitizeText(line.substring(0, 1000)), font: FONT_MONO, size: 20 })],
+                children: [new TextRun({ text: sanitizeText(line.substring(0, 15000)), font: FONT_MONO, size: 20 })],
                 spacing: { line: 240 },
               }),
             );
@@ -204,19 +199,19 @@ export async function renderNotebookCells(
           }
         } else if (output.type === 'text' && output.content.trim()) {
           let lines = output.content.split('\n');
-          const MAX_LINES = 20;
+          const MAX_LINES = 500;
           if (lines.length > MAX_LINES) {
             lines = [
-              ...lines.slice(0, 15),
+              ...lines.slice(0, 80),
               '',
               '... [OUTPUT TRUNCATED / TERPOTONG KARENA TERLALU PANJANG] ...',
               '',
-              ...lines.slice(-5)
+              ...lines.slice(-15)
             ];
           }
           const outputParagraphs = lines.map((line) =>
             new Paragraph({
-              children: [new TextRun({ text: sanitizeText(line.substring(0, 1000)), font: FONT_MONO, size: 20 })],
+              children: [new TextRun({ text: sanitizeText(line.substring(0, 15000)), font: FONT_MONO, size: 20 })],
               spacing: { line: 240 },
             }),
           );
@@ -355,7 +350,7 @@ export interface UnanalyzedImage {
  */
 export function findUnanalyzedImages(
   images: UserImage[],
-  claimedIndexes: Set<number>,
+  claimedIndexes: Set<string>,
   section: 'implementasi' | 'post_test',
   bucketCaption: string,
 ): UnanalyzedImage[] {
@@ -364,7 +359,7 @@ export function findUnanalyzedImages(
     const img = images[i];
     if (!img || !img.dataUrl) continue;
     if (img.dataUrl.startsWith('data:application/pdf')) continue;
-    if (claimedIndexes.has(i)) continue;
+    if (claimedIndexes.has(section + '-' + i)) continue;
 
     const sectionLabel = section === 'post_test' ? 'Post-Test' : 'Implementasi';
     orphans.push({

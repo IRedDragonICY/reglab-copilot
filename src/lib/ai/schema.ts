@@ -71,6 +71,7 @@ const cellAnalysisItem = {
   properties: {
     notebookIndex: { type: Type.NUMBER, description: 'Index file notebook (0-based) jika terdapat lebih dari satu notebook yang diupload. WAJIB diisi! Jika bukan notebook (hanya gambar saja), isi dengan -1.' },
     cellIndex: { type: Type.NUMBER, description: 'Index sel notebook di dalam file tersebut. WAJIB diisi! Jika bukan notebook (hanya gambar saja), isi dengan -1.' },
+    imageCategory: { type: Type.STRING, enum: ['pre_test', 'implementasi', 'post_test', 'notebook'], description: 'Kategori/bucket asal gambar lampiran tersebut diupload. Wajib disesuaikan dengan label [KATEGORI UPLOAD] yang mendahului gambar.' },
     imageIndex: { type: Type.NUMBER, description: 'Index gambar lampiran (0-based) dari daftar yang diberikan. WAJIB diisi untuk setiap screenshot implementasi atau post_test agar gambar terhubung ke entri ini. Tanpa imageIndex, gambar akan muncul tanpa penjelasan di laporan.' },
     explanation: { type: Type.STRING, description: 'Penjelasan natural berbahasa Indonesia (kalimat pasif, gaya laporan mahasiswa) untuk setiap screenshot/sel. WAJIB minimal 2 kalimat dan menyebut detail konkret yang TERLIHAT di gambar. JIKA GAMBAR ADALAH GRAFIK/VISUALISASI (Clustering/KNN dll), Anda WAJIB menganalisis mengapa bentuknya seperti itu (contoh: mengapa boundary acak/amburadul, distribusi data, pengaruh nilai K, overfitting/underfitting). Hindari gaya bahasa puitis/kaku (misal: "memberikan pemahaman baru" BUKAN "memberikan wawasan mendalam"). DILARANG menggunakan pembuka generic seperti "Pada gambar di atas...". Langsung sebut observasi konkret. Khusus post_test jelaskan baris mana di ipynb / kode yang diubah untuk menyelesaikan tantangan/soal tersebut (jangan hanya berikan jawaban).' },
     caption: { type: Type.STRING, description: 'Caption dinamis & spesifik untuk judul potongan kode. CONTOH: "Import Library Pandas", "Proses Cleansing Data Missing Value". DILARANG KERAS menggunakan kata generic/template seperti "Implementasi Kode"!' },
@@ -94,6 +95,7 @@ const kuliahCellAnalysisItem = {
   properties: {
     notebookIndex: { type: Type.NUMBER, description: 'Index file notebook (0-based) jika terdapat lebih dari satu notebook yang diupload. WAJIB diisi! Jika bukan notebook (hanya gambar saja), isi dengan -1.' },
     cellIndex: { type: Type.NUMBER, description: 'Index sel notebook di dalam file tersebut. WAJIB diisi! Jika bukan notebook (hanya gambar saja), isi dengan -1.' },
+    imageCategory: { type: Type.STRING, enum: ['pre_test', 'implementasi', 'post_test', 'notebook'], description: 'Kategori/bucket asal gambar lampiran tersebut diupload. Wajib disesuaikan dengan label [KATEGORI UPLOAD] yang mendahului gambar.' },
     imageIndex: { type: Type.NUMBER, description: 'Index gambar lampiran (0-based) dari daftar yang diberikan. WAJIB diisi untuk setiap screenshot agar gambar terhubung ke entri ini. Tanpa imageIndex, gambar akan muncul tanpa penjelasan di laporan.' },
     explanation: { type: Type.STRING, description: 'Penjelasan natural berbahasa Indonesia (kalimat pasif, gaya laporan mahasiswa) untuk setiap screenshot/sel. WAJIB minimal 2 kalimat dan menyebut detail konkret yang TERLIHAT di gambar. JIKA GAMBAR ADALAH GRAFIK/VISUALISASI (Clustering/KNN dll), Anda WAJIB menganalisis mengapa bentuknya seperti itu (contoh: mengapa boundary acak/amburadul, distribusi data, pengaruh nilai K, overfitting/underfitting). Hindari gaya bahasa puitis/kaku (misal: "memberikan pemahaman baru" BUKAN "memberikan wawasan mendalam"). DILARANG menggunakan pembuka generic seperti "Pada gambar di atas...". Langsung sebut observasi konkret.' },
     caption: { type: Type.STRING, description: 'Caption dinamis & spesifik untuk judul potongan kode. CONTOH: "Import Library Scikit-Learn", "Ekstraksi Fitur Model". DILARANG KERAS menggunakan kata generic/template seperti "Implementasi Kode"!' },
@@ -123,7 +125,8 @@ const conclusionItem = {
     type: Type.OBJECT,
     properties: {
       teks: { type: Type.STRING, description: 'Paragraf kesimpulan atau analisis. WAJIB menggunakan bahasa profesional. Istilah bahasa Inggris/asing WAJIB dicetak miring (contoh: "*Confusion Matrix*").' },
-      imageIndex: { type: Type.NUMBER, description: 'Index grafik/visualisasi (0-based) dari daftar lampiran yang sedang Anda bahas. JANGAN diisi jika Anda tidak membahas gambar tertentu dalam paragraf ini!' },
+      imageCategory: { type: Type.STRING, enum: ['pre_test', 'implementasi', 'post_test', 'notebook'], description: 'Kategori/bucket asal gambar lampiran tersebut diupload. Wajib disesuaikan dengan label [KATEGORI UPLOAD] yang mendahului gambar.' },
+    imageIndex: { type: Type.NUMBER, description: 'Index grafik/visualisasi (0-based) dari daftar lampiran yang sedang Anda bahas. JANGAN diisi jika Anda tidak membahas gambar tertentu dalam paragraf ini!' },
       caption: { type: Type.STRING, description: 'Caption gambar jika menampilkan image (contoh: "Grafik Confusion Matrix").' }
     },
     required: ['teks']
@@ -146,7 +149,7 @@ export const generateReportDeclaration = {
         description: 'Pertanyaan dan Jawaban Pre Test. Wajib diisi! tidak boleh kosong. Gunakan markdown list jika soal memiliki sub-poin. Jangan menyingkat soal!',
         properties: {
           questions: { type: Type.ARRAY, description: 'Daftar soal pre test (pastikan persis seperti input)', items: { type: Type.STRING } },
-          answers: { type: Type.ARRAY, description: 'Jawaban soal pre test', items: { type: Type.STRING } },
+          answers: { type: Type.ARRAY, description: 'Jawaban soal pre test. WAJIB DIISI DENGAN JAWABAN YANG TEPAT! Gunakan pengetahuan Anda untuk memecahkan/menjawab soal.', items: { type: Type.STRING } },
         },
         required: ['questions', 'answers'],
       },
@@ -166,7 +169,7 @@ export const generateReportDeclaration = {
         description: 'Pertanyaan dan Jawaban Post Test (Tugas). Wajib diisi! Jangan menyingkat soal. Gunakan markdown list jika soal memiliki sub-points seperti Tugas A, Tugas B dll.',
         properties: {
           questions: { type: Type.ARRAY, description: 'Daftar soal post test (Wajib persis seperti di modul, dukung markdown list)', items: { type: Type.STRING } },
-          answers: { type: Type.ARRAY, description: 'Jawaban post test detail', items: { type: Type.STRING } },
+          answers: { type: Type.ARRAY, description: 'Jawaban post test / solusi detail. WAJIB DIISI! Jawab semua pertanyaan post test dengan pengetahuan Anda secara mendalam. Jika melibatkan flowchart/diagram, terjemahkan/jelaskan diagram tersebut.', items: { type: Type.STRING } },
           cellAnalyses: cellAnalysesArray,
         },
         required: ['questions', 'answers'],

@@ -109,11 +109,9 @@ describe('buildGenerationPrompt — anti AI-slop ban list', () => {
 
   it.each([
     'Pada gambar di atas dapat dilihat',
-    'Seperti yang terlihat pada gambar',
-    'Berdasarkan tampilan di atas',
-    'Gambar di atas menunjukkan',
-    'Dapat disimpulkan bahwa',
-    'Output dari kode di atas adalah',
+    'Berdasarkan output tersebut',
+    'Gambar ini menunjukkan',
+    'Potongan kode di atas berfungsi untuk',
   ])('forbids the boilerplate opener: %s', (phrase) => {
     expect(prompt).toContain(phrase);
   });

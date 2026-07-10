@@ -392,6 +392,12 @@ export function SessionTab({ sessionId }: { sessionId: string }) {
     </div>
   ) : null;
 
+    useEffect(() => {
+    const handleExport = () => download();
+    window.addEventListener('export-docx', handleExport);
+    return () => window.removeEventListener('export-docx', handleExport);
+  }, [download]);
+
   return (
     <div ref={containerRef} className="flex w-full h-full min-h-0 bg-[#0A0A0A] text-sm overflow-hidden flex-row">
        

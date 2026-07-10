@@ -4,6 +4,9 @@ import {
   ImageRun,
   AlignmentType,
   Table,
+  TableRow,
+  TableCell,
+  WidthType,
 } from 'docx';
 import { FONT_CALIBRI, MAX_IMG_WIDTH, PALETTE } from './constants';
 import { sanitizeText } from './text';
@@ -31,6 +34,41 @@ import { preprocessMathToImages } from '../parser';
  * Any raw HTML that slips through is stripped before the walker runs
  * so the emitter does not try to interpret it.
  */
+
+function buildMarkdownTable(rows: string[][]): Table {
+  return new Table({
+    width: { size: 100, type: WidthType.PERCENTAGE },
+    rows: rows.map((row, rIdx) => {
+      const isHeader = rIdx === 0;
+      return new TableRow({
+        children: row.map((cellText) => {
+          return new TableCell({
+            children: [
+               new Paragraph({
+                 children: tokenizeInline(cellText.trim()).map(token => {
+                   if (token.kind === 'text') {
+                     return new TextRun({
+                       text: sanitizeText(token.text),
+                       bold: isHeader || token.bold,
+                       italics: token.italic,
+                       font: FONT_CALIBRI,
+                       size: 22,
+                     });
+                   }
+                   return new TextRun({ text: '[Image]' });
+                 }),
+                 alignment: AlignmentType.LEFT,
+               })
+            ],
+            shading: isHeader ? { fill: 'F3F4F6' } : undefined,
+            margins: { top: 100, bottom: 100, left: 100, right: 100 },
+          });
+        })
+      });
+    }),
+  });
+}
+
 export async function parseMarkdownToParagraphs(
   text: string,
   options?: { prefix?: string; prefixBold?: boolean },
@@ -58,7 +96,30 @@ export async function parseMarkdownToParagraphs(
   let inCodeBlock = false;
   let codeBuffer: string[] = [];
 
+  let inTable = false;
+  let tableRows: string[][] = [];
+
+  const flushTable = () => {
+    if (tableRows.length > 0) {
+      elements.push(buildMarkdownTable(tableRows));
+      elements.push(new Paragraph({ spacing: { after: 200 } }));
+      tableRows = [];
+    }
+    inTable = false;
+  };
+
   for (const line of lines) {
+    if (line.trim().startsWith('|')) {
+      if (!inTable) inTable = true;
+      const parts = line.trim().split('|').slice(1, -1).map(s => s.trim());
+      const isSeparator = parts.length > 0 && parts.every(p => /^:?-+:?$/.test(p.replace(/\s/g, '')));
+      if (!isSeparator && parts.length > 0) {
+        tableRows.push(parts);
+      }
+      continue;
+    } else {
+      flushTable();
+    }
     if (line.trim().startsWith('```')) {
       if (inCodeBlock) {
         elements.push(buildCodeTable(codeBuffer.join('\n')));
@@ -143,6 +204,7 @@ export async function parseMarkdownToParagraphs(
     await yieldThread();
   }
 
+  flushTable();
   // Flush a still-open code block at EOF.
   if (inCodeBlock && codeBuffer.length > 0) {
     elements.push(buildCodeTable(codeBuffer.join('\n')));

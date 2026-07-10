@@ -83,29 +83,59 @@ export function parseNotebook(jsonContent: string, name?: string): ParsedNoteboo
 export function categorizeNotebookCells(notebook: ParsedNotebook, nbIdx: number, cellAnalysesArray: any[]) {
   const sections = new Array(notebook.cells.length).fill('implementasi');
   
-  let currentSection = 'implementasi';
+  let structuralPostTestStartIndex = -1;
 
   for (let i = 0; i < notebook.cells.length; i++) {
     const cell = notebook.cells[i];
 
-    // Priority 1: Did AI explicitly give a section to this mapped cell (markdown or code)?
+    if (cell.cell_type === 'markdown') {
+      const sourceLower = cell.source.toLowerCase();
+      const lines = cell.source.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+      const isHeadingOrBold = lines.some(line => line.startsWith('#') || (line.startsWith('**') && line.endsWith('**')));
+      
+      const isStrongPostTestIndicator = sourceLower.includes('post test') || 
+                                        sourceLower.includes('post-test') || 
+                                        sourceLower.includes('posttest') || 
+                                        sourceLower.includes('tugas akhir') ||
+                                        sourceLower.includes('latihan tugas');
+
+      const isPretest = sourceLower.includes('pre test') || sourceLower.includes('pre-test') || sourceLower.includes('pretest');
+
+      if (isStrongPostTestIndicator && !isPretest && isHeadingOrBold) {
+         if (structuralPostTestStartIndex === -1) {
+             structuralPostTestStartIndex = i;
+         }
+      }
+    }
+  }
+
+  let currentSection = 'implementasi';
+
+  for (let i = 0; i < notebook.cells.length; i++) {
+    if (structuralPostTestStartIndex !== -1) {
+        sections[i] = i >= structuralPostTestStartIndex ? 'post_test' : 'implementasi';
+        continue;
+    }
+
     const analysis = cellAnalysesArray?.find(a => 
        a.cellIndex === i && (a.notebookIndex === undefined || a.notebookIndex === nbIdx)
     );
 
     if (analysis?.section) {
-       currentSection = analysis.section;
-    } else if (cell.cell_type === 'markdown') {
-      // Priority 2: Keyword match in markdown
-      const sourceLower = cell.source.toLowerCase();
-      if (sourceLower.includes('post test') || sourceLower.includes('post-test') || sourceLower.includes('kesimpulan') || sourceLower.includes('kesimpulan dan evaluasi')) {
-         currentSection = 'post_test';
-      }
+        if (analysis.section === 'post_test' && i < notebook.cells.length * 0.4) {
+            currentSection = 'implementasi';
+        } else {
+            currentSection = analysis.section;
+        }
     }
-    
+
+    if (analysis?.imageCategory === 'post_test') {
+       currentSection = 'post_test';
+    }
+
     sections[i] = currentSection;
   }
-
+  
   return sections;
 }
 

@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 /**
  * Tests for the persisted-state migrator and the read-time
  * `hydrateSession` defense-in-depth helper.
