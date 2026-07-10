@@ -147,9 +147,9 @@ describe('buildBatchContinuationMessage', () => {
 });
 
 describe('buildGenerationPrompt — ulasan praktikum', () => {
-  it('requires model to ONLY use user input without hallucinating fake constraints like pie chart error', () => {
+  it('requires model to inject forced constraint or use user input if provided', () => {
     const prompt = buildGenerationPrompt(baseCtx({ ulasanPraktikum: 'waktu post testnya cuma SEBENTAR' }));
-    expect(prompt).toContain('HANYA gunakan poin dari user, JANGAN mengarang cerita fiktif atau kendala yang tidak disebutkan');
+    expect(prompt).toContain('SUNTIKAN KENDALA SECARA PAKSA');
     expect(prompt).toContain('waktu post testnya cuma SEBENTAR');
   });
 });

@@ -68,6 +68,7 @@ export function buildGenerationPrompt(ctx: GenerationPromptCtx): string {
         - Untuk Post-Test, kaitkan setiap screenshot ke nomor soal Post-Test tertentu dan jelaskan bagian mana dari soal yang dijawab oleh screenshot tersebut.
         - WAJIB MENGANALISIS DIAGRAM / FLOWCHART / DRAWIO: Jika gambar berisi flowchart, drawio, bagan, atau skema manual, Anda TETAP WAJIB membaca dan menjabarkan alurnya ke teks penjelasan. JANGAN menolak membaca diagram!
         - JAWAB SEMUA SOAL: Anda WAJIB memikirkan dan menuliskan jawaban yang tepat untuk semua soal Pre-Test dan Post-Test di object \`answers\`. JANGAN dibiarkan kosong atau hanya mengulang soalnya saja.
+- ANTI-STACKING GAMBAR (DILARANG MENUMPUK GAMBAR): JANGAN PERNAH menumpuk 2 gambar atau lebih secara berurutan tanpa teks penjelasan di antaranya! SETIAP 1 screenshot WAJIB diikuti oleh paragraf observasi visual yang spesifik sebelum gambar berikutnya muncul.
 
         ANTI AI-SLOP & LANGUAGE RULES (ATURAN KETAT PENULISAN):
         1. HILANGKAN KALIMAT PEMBUKA GENERIC/META-REFERENSI:
@@ -96,9 +97,10 @@ export function buildGenerationPrompt(ctx: GenerationPromptCtx): string {
            Tone harus Semi-Formal Laporan Praktikum yang natural, bukan gaya AI kaku, dan bukan gaya chat santai.
 
         5. STRUKTUR PARAGRAF NATURAL (HINDARI POLA ROBOTIK):
-           - Kurangi ketergantungan pada bullet-points bertingkat (nested lists) yang terlalu rapi. 
-           - Rangkai analisis ke dalam 2-3 paragraf naratif yang mengalir seperti tulisan manusia.
-           - HINDARI template pembuka AI seperti: "Proses implementasi praktikum X dilakukan melalui langkah-langkah sistematis berikut:"
+           - DILARANG KERAS MENGGUNAKAN LISTING/BULLETS DI SELURUH LAPORAN: Untuk bagian Langkah Kerja, Analisis, hingga JAWABAN POST-TEST dan penjelasan eksperimen, SEMUANYA WAJIB ditulis dalam bentuk PARAGRAF NARATIF (cerita komparatif). DILARANG KERAS menggunakan format bullet points (•, -, 1, 2, 3) atau list bertingkat untuk menjabarkan arsitektur/parameter.
+           - ANTI-DUPLIKASI KETAT (NO REDUNDANCY): DILARANG KERAS mencetak/menghasilkan paragraf yang persis sama dua kali. Pastikan Langkah Kerja dan Ulasan Praktikum hanya dieksekusi satu kali per dokumen!
+           - BLACKLIST KATA PEMBUKA: DILARANG KERAS menggunakan kalimat "Proses pengerjaan praktikum dilakukan melalui tahapan sistematis berikut" atau variasi kalimat pengantar list lainnya. Langsung masuk ke paragraf pertama (Contoh awal: "Pada praktikum kali ini, langkah pertama yang dilakukan adalah...").
+           - BLACKLIST KATA MEGAH: DILARANG menggunakan kata-kata: ketangguhan, ketiadaan, mengonfirmasi, meregulasi, komprehensif. Gunakan bahasa Indonesia sehari-hari yang sopan (semi-formal).
            - Variasikan awal kalimat. Jangan selalu "Fungsi X digunakan untuk...". Gunakan variasi pasif santai seperti: "Pada langkah ini, kita melakukan import...", "Selanjutnya, dataset dibagi menjadi...", atau "Model kemudian dijalankan...".
 
         6. ANALOGI TEKNIS YANG MEMBUMI:
@@ -106,8 +108,9 @@ export function buildGenerationPrompt(ctx: GenerationPromptCtx): string {
            (Contoh dilarang: "TER menghitung seberapa capek manusia", "kata basa-basi").
            Gunakan penjelasan teknis nyata: "TER menghitung seberapa banyak perbaikan manual yang diperlukan terhadap hasil mesin agar sama dengan referensi."
 
-        7. TAMBAHKAN PENGALAMAN TEKNIS PRAKTIKAL (JIKA ADA):
-           Di bagian Analisis Hasil / Ulasan Praktikum, selipkan opini pengalaman teknis/kendala praktikal yang natural dialami mahasiswa (misal: lamanya proses training, perlunya menyesuaikan batch size karena memori GPU/Colab, dsb) jika relevan, agar tidak hanya berisi evaluasi teori metrik saja.
+        7. TAMBAHKAN PENGALAMAN TEKNIS PRAKTIKAL:
+           Di bagian Analisis Hasil, selipkan opini pengalaman teknis/kendala praktikal yang natural dialami mahasiswa.
+           - SUNTIKAN KENDALA SECARA PAKSA PADA ULASAN PRAKTIKUM: Di bagian Ulasan Praktikum, JANGAN menulis 'praktikum berjalan sangat lancar tanpa kendala'. Anda WAJIB mengarang satu kendala wajar mahasiswa (contoh: bingung menyesuaikan dimensi reshape untuk input LSTM, error saat slicing data, proses training epoch yang lama/GPU limit di Colab, atau penyesuaian hyperparameter yang sulit) jika user tidak menyebutkannya. Jika user menyebutkan kendalanya sendiri, gunakan dan kembangkan kendala dari user tersebut.
 
         MULTI-TURN BATCH PROCESSING (CRITICAL):
         TOTAL GAMBAR/VISUAL YANG DIKIRIMKAN ADALAH: ${ctx.totalImages} gambar.
@@ -125,7 +128,7 @@ export function buildGenerationPrompt(ctx: GenerationPromptCtx): string {
         Modul Context/Goals: ${ctx.modulContext}
         Post-Test Questions: ${ctx.postTest}
         Ulasan Praktikum (Raw Input dari User): ${ctx.ulasanPraktikum || '-'}
-        PENTING UNTUK ULASAN PRAKTIKUM: Jika Raw Input dari User di atas TIDAK KOSONG ("-"), Anda WAJIB MENGGUNAKAN DAN MENGEMBANGKAN KATA/IDE dari user tersebut secara detail! Jangan menggantinya dengan ulasan generik. Jika user menyebut "kendala dataset ikan", Anda wajib memasukkannya. Jika user memberikan saran, Anda wajib menuliskannya di field \`ulasan_praktikum\`. HANYA gunakan poin dari user, JANGAN mengarang cerita fiktif atau kendala yang tidak disebutkan (seperti error pie chart) jika user tidak menyebutkannya.
+        PENTING UNTUK ULASAN PRAKTIKUM: Jika Raw Input dari User di atas TIDAK KOSONG ("-"), Anda WAJIB MENGGUNAKAN DAN MENGEMBANGKAN KATA/IDE dari user tersebut secara detail! Namun jika kosong ("-"), Anda WAJIB menerapkan aturan SUNTIKAN KENDALA SECARA PAKSA dengan mengarang satu kendala teknis logis yang biasa dialami mahasiswa saat mempraktikkan materi ini.
         
         Notebook Data (JSON Extracted Cells):
         ${ctx.notebookPromptData}
