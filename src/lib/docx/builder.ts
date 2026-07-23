@@ -50,6 +50,7 @@ export async function generateDocx(
 ): Promise<Blob> {
   if (onProgress) onProgress("Membangun cover halaman...");
   const isKuliah = metadata.reportType === 'kuliah';
+  const isResume = metadata.reportType === 'resume';
   const coverChildren: any[] = [];
   const frontChildren: any[] = [];
   const bodyChildren: any[] = [];
@@ -58,7 +59,7 @@ export async function generateDocx(
     new Paragraph({
       alignment: AlignmentType.CENTER,
       children: [
-        new TextRun({ text: isKuliah ? 'LAPORAN KULIAH' : 'LAPORAN PRAKTIKUM', bold: true, size: 28, font: 'Calibri' }),
+        new TextRun({ text: isResume ? 'LAPORAN RESUME' : isKuliah ? 'LAPORAN KULIAH' : 'LAPORAN PRAKTIKUM', bold: true, size: 28, font: 'Calibri' }),
       ],
     }),
     new Paragraph({
@@ -70,13 +71,13 @@ export async function generateDocx(
     new Paragraph({
       alignment: AlignmentType.CENTER,
       children: [
-        new TextRun({ text: isKuliah ? 'Topik' : 'Materi', bold: true, size: 28, font: 'Calibri' }),
+        new TextRun({ text: isResume ? 'Topik/Acara' : isKuliah ? 'Topik' : 'Materi', bold: true, size: 28, font: 'Calibri' }),
       ],
     }),
     new Paragraph({
       alignment: AlignmentType.CENTER,
       children: [
-        new TextRun({ text: sanitizeText(getFormattedJudulPertemuan(metadata)), bold: true, size: 28, font: 'Calibri' }),
+        new TextRun({ text: sanitizeText(getFormattedJudulPertemuan(metadata, aiData)), bold: true, size: 28, font: 'Calibri' }),
       ],
     }),
     new Paragraph({
@@ -183,39 +184,54 @@ export async function generateDocx(
     })
   );
 
-  frontChildren.push(
-    new Paragraph({
-      heading: HeadingLevel.HEADING_1,
-      alignment: AlignmentType.CENTER,
-      children: [new TextRun({ text: 'DAFTAR GAMBAR', bold: true, size: 22, font: 'Calibri', color: '000000' })],
-      spacing: { after: 400 },
-    }),
-    new TableOfContents("Daftar Gambar", {
-        hyperlink: true,
-        headingStyleRange: "4-4",
-        beginDirty: true,
-    }),
-    new Paragraph({
-      children: [new PageBreak()],
-    })
+  const cellAnalysesArray = aiData.cellAnalyses || (aiData as any).praktikum?.cellAnalyses || (aiData as any).kuliah?.cellAnalyses;
+  const hasImages = (
+    preTestImages.length > 0 ||
+    implImages.length > 0 ||
+    postTestImages.length > 0 ||
+    notebooks.some(nb => nb && nb.cells.some(c => c.outputs?.some((o: any) => o.type === 'image' || o.type === 'html'))) ||
+    Boolean(cellAnalysesArray && cellAnalysesArray.some((a: any) => a.imageIndex !== undefined))
   );
 
-  frontChildren.push(
-    new Paragraph({
-      heading: HeadingLevel.HEADING_1,
-      alignment: AlignmentType.CENTER,
-      children: [new TextRun({ text: 'DAFTAR KODE PROGRAM', bold: true, size: 22, font: 'Calibri', color: '000000' })],
-      spacing: { after: 400 },
-    }),
-    new TableOfContents("Daftar Kode Program", {
-        hyperlink: true,
-        headingStyleRange: "5-5",
-        beginDirty: true,
-    }),
-    new Paragraph({
-      children: [new PageBreak()],
-    })
-  );
+  const hasCode = notebooks.some(nb => nb && nb.cells.some(c => c.cell_type === 'code' && Boolean(c.source && c.source.trim())));
+
+  if (hasImages) {
+    frontChildren.push(
+      new Paragraph({
+        heading: HeadingLevel.HEADING_1,
+        alignment: AlignmentType.CENTER,
+        children: [new TextRun({ text: 'DAFTAR GAMBAR', bold: true, size: 22, font: 'Calibri', color: '000000' })],
+        spacing: { after: 400 },
+      }),
+      new TableOfContents("Daftar Gambar", {
+          hyperlink: true,
+          headingStyleRange: "4-4",
+          beginDirty: true,
+      }),
+      new Paragraph({
+        children: [new PageBreak()],
+      })
+    );
+  }
+
+  if (hasCode) {
+    frontChildren.push(
+      new Paragraph({
+        heading: HeadingLevel.HEADING_1,
+        alignment: AlignmentType.CENTER,
+        children: [new TextRun({ text: 'DAFTAR KODE PROGRAM', bold: true, size: 22, font: 'Calibri', color: '000000' })],
+        spacing: { after: 400 },
+      }),
+      new TableOfContents("Daftar Kode Program", {
+          hyperlink: true,
+          headingStyleRange: "5-5",
+          beginDirty: true,
+      }),
+      new Paragraph({
+        children: [new PageBreak()],
+      })
+    );
+  }
 
   const notebookLinks: string[] = [];
   const postTestNotebookLinks: string[] = [];
@@ -239,14 +255,14 @@ export async function generateDocx(
     }
   }
 
-  const cellAnalysesArray = aiData.cellAnalyses || (aiData as any).praktikum?.cellAnalyses || (aiData as any).kuliah?.cellAnalyses;
+  // cellAnalysesArray already declared above
   const preTestAnswersArray = aiData.preTestAnswers || ((aiData as any).pre_test?.questions || []).map((q: string, i: number) => ({ q, a: (aiData as any).pre_test?.answers?.[i] || '' }));
   const postTestAnswersArray = aiData.postTestAnswers || ((aiData as any).post_test?.questions || []).map((q: string, i: number) => ({ q, a: (aiData as any).post_test?.answers?.[i] || '' }));
   const narrative = aiData.stepByStepNarrative || (aiData as any).praktikum?.langkah_kerja || '';
   const cAnalysis = aiData.codeAnalysis || (aiData as any).praktikum?.analisis_hasil || (aiData as any).kuliah?.analisis_hasil || '';
   const pendahuluanText = aiData.pendahuluan || (aiData as any).kuliah?.pendahuluan || '';
 
-  if (!isKuliah) {
+  if (!isKuliah && !isResume) {
     bodyChildren.push(
       new Paragraph({
         heading: HeadingLevel.HEADING_1,
@@ -282,7 +298,9 @@ export async function generateDocx(
       new Paragraph({
         heading: HeadingLevel.HEADING_1,
         alignment: AlignmentType.CENTER,
-        children: [
+        children: isResume ? [
+          new TextRun({ text: 'PENDAHULUAN', bold: true, size: 22, font: 'Calibri', color: '000000' })
+        ] : [
           new TextRun({ text: 'BAB I', bold: true, size: 22, font: 'Calibri', color: '000000' }),
           new TextRun({ text: 'PENDAHULUAN', bold: true, size: 22, font: 'Calibri', color: '000000', break: 1 })
         ],
@@ -296,7 +314,7 @@ export async function generateDocx(
     }
   }
 
-  if (!isKuliah) {
+  if (!isKuliah && !isResume) {
     bodyChildren.push(
       new Paragraph({
         heading: HeadingLevel.HEADING_1,
@@ -336,17 +354,19 @@ export async function generateDocx(
 
     bodyChildren.push(...(await parseMarkdownToParagraphs(narrative)));
   } else {
-    bodyChildren.push(
-      new Paragraph({
-        heading: HeadingLevel.HEADING_1,
-        alignment: AlignmentType.CENTER,
-        children: [
-          new TextRun({ text: 'BAB II', bold: true, size: 22, font: 'Calibri', color: '000000' }),
-          new TextRun({ text: 'PEMBAHASAN', bold: true, size: 22, font: 'Calibri', color: '000000', break: 1 })
-        ],
-        spacing: { before: 400, after: 200 },
-      })
-    );
+    if (!isResume) {
+      bodyChildren.push(
+        new Paragraph({
+          heading: HeadingLevel.HEADING_1,
+          alignment: AlignmentType.CENTER,
+          children: [
+            new TextRun({ text: 'BAB II', bold: true, size: 22, font: 'Calibri', color: '000000' }),
+            new TextRun({ text: 'PEMBAHASAN', bold: true, size: 22, font: 'Calibri', color: '000000', break: 1 })
+          ],
+          spacing: { before: 400, after: 200 },
+        })
+      );
+    }
   }
 
   if (notebookLinks.length > 0) {
@@ -372,7 +392,7 @@ export async function generateDocx(
     });
   }
 
-  if (!isKuliah) {
+  if (!isKuliah && !isResume) {
     bodyChildren.push(
       new Paragraph({
         heading: HeadingLevel.HEADING_2,
@@ -392,11 +412,11 @@ export async function generateDocx(
       const sections = categorizeNotebookCells(notebook, nbIdx, cellAnalysesArray || []);
       const implCells = notebook.cells.map((c, i) => ({ cell: c, index: i, notebookIndex: nbIdx })).filter(item => {
         if (nbIdx >= numImplNotebooks) return false;
-        if (isKuliah) return true;
+        if (isKuliah || isResume) return true;
         return sections[item.index] === 'implementasi';
       });
 
-      const renderedImpl = await renderNotebookCells(implCells, aiData, 'II', implCodeIndex, implImageIndex);
+      const renderedImpl = await renderNotebookCells(implCells, aiData, isResume ? '' : 'II', implCodeIndex, implImageIndex);
       bodyChildren.push(...renderedImpl.paragraphs);
       implCodeIndex = renderedImpl.nextCodeIdx;
       implImageIndex = renderedImpl.nextImgIdx;
@@ -406,6 +426,7 @@ export async function generateDocx(
 
   const usedImplImages = new Set<string>();
   const usedPostTestImages = new Set<string>();
+  const renderedImplImageIndexes = new Set<number>();
   if (cellAnalysesArray) {
     for (const analysis of cellAnalysesArray) {
       if (analysis.section === 'implementasi' && analysis.imageIndex !== undefined) {
@@ -424,21 +445,39 @@ export async function generateDocx(
 
   if (cellAnalysesArray) {
     for (const analysis of cellAnalysesArray) {
-      if (analysis.section === 'implementasi' && analysis.imageIndex !== undefined) {
-        const img = implImages[analysis.imageIndex];
-        if (img) {
-          bodyChildren.push(
-            new Paragraph({
-              children: [new TextRun({ text: String(analysis.caption).replace(/['"]/g, ''), bold: true, size: 22, font: 'Calibri' })],
-              spacing: { before: 200, after: 100 },
-            })
-          );
-          
-          const imgParagraphs = await createImagesParagraphs([img], String(analysis.caption).replace(/['"]/g, ''), 'II', implImageIndex);
-          bodyChildren.push(...imgParagraphs);
-          implImageIndex++;
-
-          bodyChildren.push(...(await parseMarkdownToParagraphs(analysis.explanation)));
+      if (analysis.section === 'implementasi') {
+        let renderedImage = false;
+        if (analysis.imageIndex !== undefined) {
+          const img = implImages[analysis.imageIndex];
+          if (img) {
+            renderedImplImageIndexes.add(analysis.imageIndex);
+            bodyChildren.push(
+              new Paragraph({
+                children: [new TextRun({ text: String(analysis.caption).replace(/['"]/g, ''), bold: true, size: 22, font: 'Calibri' })],
+                spacing: { before: 200, after: 100 },
+              })
+            );
+            
+            const imgParagraphs = await createImagesParagraphs([img], String(analysis.caption).replace(/['"]/g, ''), isResume ? '' : 'II', implImageIndex);
+            bodyChildren.push(...imgParagraphs);
+            implImageIndex++;
+            bodyChildren.push(...(await parseMarkdownToParagraphs(analysis.explanation)));
+            renderedImage = true;
+          }
+        }
+        
+        if (!renderedImage && (notebooks.length === 0 || analysis.notebookIndex === -1)) {
+          if (analysis.caption) {
+            bodyChildren.push(
+              new Paragraph({
+                children: [new TextRun({ text: String(analysis.caption).replace(/['"]/g, ''), bold: true, size: 22, font: 'Calibri' })],
+                spacing: { before: 200, after: 100 },
+              })
+            );
+          }
+          if (analysis.explanation) {
+            bodyChildren.push(...(await parseMarkdownToParagraphs(analysis.explanation)));
+          }
         }
       }
       await yieldThread();
@@ -453,7 +492,8 @@ export async function generateDocx(
       'implementasi',
       'Implementasi',
     );
-    const rendered = await renderOrphanImages(implImages, orphans, 'II', implImageIndex);
+    orphans.forEach(o => renderedImplImageIndexes.add(o.index));
+    const rendered = await renderOrphanImages(implImages, orphans, isResume ? '' : 'II', implImageIndex);
     bodyChildren.push(...rendered.paragraphs);
     implImageIndex = rendered.nextImgIdx;
   }
@@ -463,9 +503,9 @@ export async function generateDocx(
     const elements: any[] = [];
     if (Array.isArray(cAnalysisData)) {
       for (const item of cAnalysisData) {
-        if (item.imageIndex !== undefined && implImages[item.imageIndex]) {
+        if (item.imageIndex !== undefined && implImages[item.imageIndex] && !renderedImplImageIndexes.has(item.imageIndex)) {
           const img = implImages[item.imageIndex];
-          usedImplImages.add(item.imageIndex);
+          renderedImplImageIndexes.add(item.imageIndex);
           if (item.caption) {
             elements.push(
               new Paragraph({
@@ -487,7 +527,7 @@ export async function generateDocx(
     return { elements, nextIdx: currentIdx };
   };
 
-  if (!isKuliah) {
+  if (!isKuliah && !isResume) {
     bodyChildren.push(
       new Paragraph({
         heading: HeadingLevel.HEADING_2,
@@ -495,7 +535,7 @@ export async function generateDocx(
         spacing: { before: 200, after: 100 },
       })
     );
-    const { elements, nextIdx } = await renderCAnalysis(cAnalysis, 'II', implImageIndex);
+    const { elements, nextIdx } = await renderCAnalysis(cAnalysis, isResume ? '' : 'II', implImageIndex);
     bodyChildren.push(...elements);
     implImageIndex = nextIdx;
 
@@ -514,7 +554,9 @@ export async function generateDocx(
       new Paragraph({
         heading: HeadingLevel.HEADING_1,
         alignment: AlignmentType.CENTER,
-        children: [
+        children: isResume ? [
+          new TextRun({ text: 'KESIMPULAN', bold: true, size: 22, font: 'Calibri', color: '000000' })
+        ] : [
           new TextRun({ text: 'BAB III', bold: true, size: 22, font: 'Calibri', color: '000000' }),
           new TextRun({ text: 'KESIMPULAN', bold: true, size: 22, font: 'Calibri', color: '000000', break: 1 })
         ],
@@ -522,11 +564,11 @@ export async function generateDocx(
       })
     );
     let kesimpulanImageIndex = 1;
-    const { elements } = await renderCAnalysis(cAnalysis, 'III', kesimpulanImageIndex);
+    const { elements } = await renderCAnalysis(cAnalysis, isResume ? '' : 'III', kesimpulanImageIndex);
     bodyChildren.push(...elements);
   }
 
-  if (!isKuliah) {
+  if (!isKuliah && !isResume) {
     bodyChildren.push(
       new Paragraph({
         heading: HeadingLevel.HEADING_1,
@@ -594,7 +636,7 @@ export async function generateDocx(
              hasRenderedPostTestIntroduction = true;
           }
           
-          const renderedPostTest = await renderNotebookCells(postTestCells, aiData, 'III', postTestCodeIndex, postTestImageIndex);
+          const renderedPostTest = await renderNotebookCells(postTestCells, aiData, isResume ? '' : 'III', postTestCodeIndex, postTestImageIndex);
           bodyChildren.push(...renderedPostTest.paragraphs);
           postTestCodeIndex = renderedPostTest.nextCodeIdx;
           postTestImageIndex = renderedPostTest.nextImgIdx;
@@ -606,26 +648,43 @@ export async function generateDocx(
     const usedPostTestImages = new Set<string>();
     if (cellAnalysesArray) {
       for (const analysis of cellAnalysesArray) {
-        if (analysis.section === 'post_test' && analysis.imageIndex !== undefined) {
-          const categoryToUse = analysis.imageCategory || 'post_test';
-          let img;
-          if (categoryToUse === 'implementasi') img = implImages[analysis.imageIndex];
-          else if (categoryToUse === 'post_test') img = postTestImages[analysis.imageIndex];
-          else if (categoryToUse === 'pre_test') img = preTestImages[analysis.imageIndex];
-          if (img) {
-            usedPostTestImages.add((analysis.imageCategory || 'post_test') + '-' + analysis.imageIndex);
-            bodyChildren.push(
-              new Paragraph({
-                children: [new TextRun({ text: String(analysis.caption).replace(/['"]/g, ''), bold: true, size: 22, font: 'Calibri' })],
-                spacing: { before: 200, after: 100 },
-              })
-            );
-            
-            const imgParagraphs = await createImagesParagraphs([img], String(analysis.caption).replace(/['"]/g, ''), 'III', postTestImageIndex);
-            bodyChildren.push(...imgParagraphs);
-            postTestImageIndex++;
-
-            bodyChildren.push(...(await parseMarkdownToParagraphs(analysis.explanation)));
+        if (analysis.section === 'post_test') {
+          let renderedImage = false;
+          if (analysis.imageIndex !== undefined) {
+            const categoryToUse = analysis.imageCategory || 'post_test';
+            let img;
+            if (categoryToUse === 'implementasi') img = implImages[analysis.imageIndex];
+            else if (categoryToUse === 'post_test') img = postTestImages[analysis.imageIndex];
+            else if (categoryToUse === 'pre_test') img = preTestImages[analysis.imageIndex];
+            if (img) {
+              usedPostTestImages.add((analysis.imageCategory || 'post_test') + '-' + analysis.imageIndex);
+              bodyChildren.push(
+                new Paragraph({
+                  children: [new TextRun({ text: String(analysis.caption).replace(/['"]/g, ''), bold: true, size: 22, font: 'Calibri' })],
+                  spacing: { before: 200, after: 100 },
+                })
+              );
+              
+              const imgParagraphs = await createImagesParagraphs([img], String(analysis.caption).replace(/['"]/g, ''), isResume ? '' : 'III', postTestImageIndex);
+              bodyChildren.push(...imgParagraphs);
+              postTestImageIndex++;
+              bodyChildren.push(...(await parseMarkdownToParagraphs(analysis.explanation)));
+              renderedImage = true;
+            }
+          }
+          
+          if (!renderedImage && (notebooks.length === 0 || analysis.notebookIndex === -1)) {
+            if (analysis.caption) {
+              bodyChildren.push(
+                new Paragraph({
+                  children: [new TextRun({ text: String(analysis.caption).replace(/['"]/g, ''), bold: true, size: 22, font: 'Calibri' })],
+                  spacing: { before: 200, after: 100 },
+                })
+              );
+            }
+            if (analysis.explanation) {
+              bodyChildren.push(...(await parseMarkdownToParagraphs(analysis.explanation)));
+            }
           }
         }
       }

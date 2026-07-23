@@ -172,7 +172,7 @@ describe('hydrateSession', () => {
 });
 
 describe('setCopilotSettings', () => {
-  it('clamps maxIterations to [1, 30] and merges other fields without clamping', () => {
+  it('clamps maxIterations to [1, 999] and merges other fields without clamping', () => {
     // Drive the live store rather than instantiating a fresh one — the
     // setter logic is the same and we can leave the slice as we found
     // it at the end (defaults) so this test composes with any others
@@ -180,8 +180,8 @@ describe('setCopilotSettings', () => {
     const { setCopilotSettings, copilotSettings: initial } = useAppStore.getState();
     expect(initial).toEqual(DEFAULT_COPILOT_SETTINGS);
 
-    setCopilotSettings({ maxIterations: 99 });
-    expect(useAppStore.getState().copilotSettings.maxIterations).toBe(30);
+    setCopilotSettings({ maxIterations: 1000 });
+    expect(useAppStore.getState().copilotSettings.maxIterations).toBe(999);
 
     setCopilotSettings({ maxIterations: 0 });
     expect(useAppStore.getState().copilotSettings.maxIterations).toBe(1);

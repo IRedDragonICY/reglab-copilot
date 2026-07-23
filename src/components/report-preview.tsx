@@ -451,12 +451,25 @@ function ReportPreviewInner({
   const finalUnusedImplImages = implImages.filter((_, i) => !usedImplImageIndexes.has('implementasi-' + i) && !usedPostTestImageIndexes.has('implementasi-' + i));
   const finalUnusedPostTestImages = postTestImages.filter((_, i) => !usedPostTestImageIndexes.has('post_test-' + i) && !usedImplImageIndexes.has('post_test-' + i));
   
-  const allImageMocks =[
+  // Push unused implementasi/poster images to implElements so they stay in PEMBAHASAN / Section II
+  finalUnusedImplImages.forEach((img, idx) => {
+    usedImplImageIndexes.add('implementasi-' + implImages.indexOf(img));
+    implElements.push(
+      <div key={`unused-impl-img-${img.id || idx}`} className="mb-8">
+        <PreviewImage src={img.dataUrl} caption={`Gambar II.${nextImgIdxII++} Output Visual / Screenshot`} />
+      </div>
+    );
+  });
+
+  const allImageMocks = [
     ...preTestImages.map((_, i) => `Gambar I.${i + 1} Lembar Jawaban Pre-Test`),
-    ...finalUnusedImplImages.map((_, i) => `Gambar II.${nextImgIdxII + i} Output Visual / Screenshot`),
+    ...implImages.map((_, i) => `Gambar II.${i + 1} Output Visual / Screenshot`),
     ...finalUnusedPostTestImages.map((_, i) => `Gambar III.${nextImgIdxIII + i} Lembar Jawaban Post-Test`)
   ];
-  const allCodeMocks = Array.from({ length: nextCodeIdxII - 1 }).map((_, i) => `Kode Program II.${i + 1} Blok Kode`);
+  const allCodeMocks = Array.from({ length: Math.max(0, (nextCodeIdxII - 1) + (nextCodeIdxIII - 1)) }).map((_, i) => `Kode Program II.${i + 1} Blok Kode`);
+
+  const hasImages = allImageMocks.length > 0;
+  const hasCode = allCodeMocks.length > 0;
 
   return (
     <div ref={previewRef} className="w-full flex flex-col items-center gap-8 py-8 font-sans text-black text-justify leading-relaxed outline-none">
@@ -464,10 +477,10 @@ function ReportPreviewInner({
       {/* 1. Cover Page */}
       <PreviewPage isCover>
         <div className="text-center w-full outline-none border border-transparent focus:border-gray-300 focus:bg-gray-50 p-2 rounded transition-all text-black" contentEditable suppressContentEditableWarning>
-          <h1 className="text-[18.6px] font-bold uppercase">{metadata.reportType === 'kuliah' ? 'LAPORAN KULIAH' : 'LAPORAN PRAKTIKUM'}</h1>
-          <h2 className="text-[18.6px] font-bold mt-1 uppercase">{metadata.mataPraktikum || (metadata.reportType === 'kuliah' ? '[Mata Kuliah]' : '[Mata Praktikum]')}</h2>
-          <h2 className="text-[18.6px] font-bold mt-1">{metadata.reportType === 'kuliah' ? 'Topik' : 'Materi'}</h2>
-          <h2 className="text-[18.6px] font-bold mt-1 uppercase">{getFormattedJudulPertemuan(metadata)}</h2>
+          <h1 className="text-[18.6px] font-bold uppercase">{metadata.reportType === 'resume' ? 'LAPORAN RESUME' : metadata.reportType === 'kuliah' ? 'LAPORAN KULIAH' : 'LAPORAN PRAKTIKUM'}</h1>
+          <h2 className="text-[18.6px] font-bold mt-1 uppercase">{metadata.mataPraktikum || (metadata.reportType === 'resume' ? '[Acara / Topik]' : metadata.reportType === 'kuliah' ? '[Mata Kuliah]' : '[Mata Praktikum]')}</h2>
+          <h2 className="text-[18.6px] font-bold mt-1">{metadata.reportType === 'resume' ? 'Topik / Acara' : metadata.reportType === 'kuliah' ? 'Topik' : 'Materi'}</h2>
+          <h2 className="text-[18.6px] font-bold mt-1 uppercase">{getFormattedJudulPertemuan(metadata, aiData)}</h2>
           <h2 className="text-[18.6px] font-bold mt-1">
             {metadata.laboratorium ? `${metadata.hariTanggalSesi} Lab. ${metadata.laboratorium}` : metadata.hariTanggalSesi || '[Hari/Tanggal/Sesi]'}
           </h2>
@@ -500,14 +513,14 @@ function ReportPreviewInner({
           <h1 className="text-xl font-bold text-center mb-12 font-serif uppercase text-black">Daftar Isi</h1>
           <div className="space-y-4 font-serif text-lg leading-relaxed text-black">
             <TocItem title="DAFTAR ISI" page="I" id="daftar-isi" isBold />
-            <TocItem title="DAFTAR GAMBAR" page="II" id="daftar-gambar" isBold />
-            <TocItem title="DAFTAR KODE PROGRAM" page="III" id="daftar-kode-program" isBold />
+            {hasImages && <TocItem title="DAFTAR GAMBAR" page="II" id="daftar-gambar" isBold />}
+            {hasCode && <TocItem title="DAFTAR KODE PROGRAM" page={hasImages ? "III" : "II"} id="daftar-kode-program" isBold />}
 
-            {metadata.reportType === 'kuliah' ? (
+            {metadata.reportType !== 'praktikum' ? (
               <>
-                <TocItem title="BAB I PENDAHULUAN" page="1" id="pre-test" isBold />
-                <TocItem title="BAB II PEMBAHASAN" page="2" id="hasil-praktikum" isBold />
-                <TocItem title="BAB III KESIMPULAN" page="4" id="analisis-hasil" isBold />
+                {metadata.reportType === 'resume' ? <TocItem title="PENDAHULUAN" page="1" id="pre-test" isBold /> : <TocItem title="BAB I PENDAHULUAN" page="1" id="pre-test" isBold />}
+                {metadata.reportType === 'resume' ? <TocItem title="PEMBAHASAN" page="2" id="hasil-praktikum" isBold /> : <TocItem title="BAB II PEMBAHASAN" page="2" id="hasil-praktikum" isBold />}
+                {metadata.reportType === 'resume' ? <TocItem title="KESIMPULAN" page="4" id="analisis-hasil" isBold /> : <TocItem title="BAB III KESIMPULAN" page="4" id="analisis-hasil" isBold />}
               </>
             ) : (
               <>
@@ -525,34 +538,34 @@ function ReportPreviewInner({
       </PreviewPage>
 
       {/* 3. Daftar Gambar */}
-      <PreviewPage studentName={metadata.nama} pageNumber="II">
-        <h1 id="daftar-gambar" className="text-xl font-bold scroll-mt-8 text-center text-black mb-8">DAFTAR GAMBAR</h1>
-        <div className="space-y-4 font-serif leading-relaxed text-sm text-black">
-          {allImageMocks.length > 0 ? allImageMocks.map((title, i) => (
-            <TocItem key={i} title={title} page="-" />
-          )) : (
-            <p className="text-gray-500 italic text-center">Tidak ada gambar</p>
-          )}
-        </div>
-      </PreviewPage>
+      {hasImages && (
+        <PreviewPage studentName={metadata.nama} pageNumber="II">
+          <h1 id="daftar-gambar" className="text-xl font-bold scroll-mt-8 text-center text-black mb-8">DAFTAR GAMBAR</h1>
+          <div className="space-y-4 font-serif leading-relaxed text-sm text-black">
+            {allImageMocks.map((title, i) => (
+              <TocItem key={i} title={title} page="-" />
+            ))}
+          </div>
+        </PreviewPage>
+      )}
 
       {/* 4. Daftar Kode Program */}
-      <PreviewPage studentName={metadata.nama} pageNumber="III">
-        <h1 id="daftar-kode-program" className="text-xl font-bold scroll-mt-8 text-center text-black mb-8">DAFTAR KODE PROGRAM</h1>
-        <div className="space-y-4 font-serif leading-relaxed text-sm text-black">
-          {allCodeMocks.length > 0 ? allCodeMocks.map((title, i) => (
-            <TocItem key={i} title={title} page="-" />
-          )) : (
-            <p className="text-gray-500 italic text-center">Tidak ada kode program</p>
-          )}
-        </div>
-      </PreviewPage>
+      {hasCode && (
+        <PreviewPage studentName={metadata.nama} pageNumber={hasImages ? "III" : "II"}>
+          <h1 id="daftar-kode-program" className="text-xl font-bold scroll-mt-8 text-center text-black mb-8">DAFTAR KODE PROGRAM</h1>
+          <div className="space-y-4 font-serif leading-relaxed text-sm text-black">
+            {allCodeMocks.map((title, i) => (
+              <TocItem key={i} title={title} page="-" />
+            ))}
+          </div>
+        </PreviewPage>
+      )}
 
       {/* 5. Pre Test / Pendahuluan */}
       <PreviewPage studentName={metadata.nama} pageNumber="1">
-        {metadata.reportType === 'kuliah' ? (
+        {metadata.reportType !== 'praktikum' ? (
           <>
-            <h1 id="pre-test" className="text-xl font-bold scroll-mt-8 outline-none text-black text-center" contentEditable suppressContentEditableWarning>BAB I<br/>PENDAHULUAN</h1>
+            {metadata.reportType === 'resume' ? <h1 id="pre-test" className="text-xl font-bold scroll-mt-8 outline-none text-black text-center" contentEditable suppressContentEditableWarning>PENDAHULUAN</h1> : <h1 id="pre-test" className="text-xl font-bold scroll-mt-8 outline-none text-black text-center" contentEditable suppressContentEditableWarning>BAB I<br/>PENDAHULUAN</h1>}
             <div 
               className="mt-8 text-gray-900 text-justify prose prose-sm max-w-none outline-none border border-transparent focus:border-gray-300 focus:bg-gray-50 p-2 rounded transition-all"
               contentEditable suppressContentEditableWarning
@@ -586,9 +599,9 @@ function ReportPreviewInner({
 
       {/* 6. Hasil Praktikum (Alat & Langkah) / Pembahasan */}
       <PreviewPage studentName={metadata.nama} pageNumber="2">
-        {metadata.reportType === 'kuliah' ? (
+        {metadata.reportType !== 'praktikum' ? (
           <>
-            <h1 id="hasil-praktikum" className="text-xl font-bold scroll-mt-8 outline-none text-black text-center" contentEditable suppressContentEditableWarning>BAB II<br/>PEMBAHASAN</h1>
+            {metadata.reportType === 'resume' ? <h1 id="hasil-praktikum" className="text-xl font-bold scroll-mt-8 outline-none text-black text-center" contentEditable suppressContentEditableWarning>PEMBAHASAN</h1> : <h1 id="hasil-praktikum" className="text-xl font-bold scroll-mt-8 outline-none text-black text-center" contentEditable suppressContentEditableWarning>BAB II<br/>PEMBAHASAN</h1>}
             <NotebookLinks links={notebookLinks} />
           </>
         ) : (
@@ -641,7 +654,7 @@ function ReportPreviewInner({
         
         return (
           <PreviewPage key={`impl-chunk-${chunkIdx}`} studentName={metadata.nama} pageNumber={3 + chunkIdx}>
-            {chunkIdx === 0 && metadata.reportType !== 'kuliah' && (
+            {chunkIdx === 0 && metadata.reportType === 'praktikum' && (
               <h2 id="implementasi" className="font-bold text-lg scroll-mt-8 text-black outline-none" contentEditable suppressContentEditableWarning>C. Implementasi/Screenshot:</h2>
             )}
             <div className="pl-4 space-y-8">
@@ -651,31 +664,25 @@ function ReportPreviewInner({
         );
       })}
 
-      {/* 8. Analisis Hasil & Impl Images Terakhir */}
+      {/* 8. Analisis Hasil & Kesimpulan */}
       <PreviewPage studentName={metadata.nama} pageNumber={3 + Math.ceil(implElements.length / 2)}>
         <div className="pl-4 space-y-6">
-          <div className="space-y-8">
-            {finalUnusedImplImages.map((img, idx) => (
-              <PreviewImage key={img.id} src={img.dataUrl} caption={`Gambar II.${nextImgIdxII + idx} Output Visual / Screenshot`} />
-            ))}
-          </div>
-
-          {metadata.reportType === 'kuliah' ? (
-            <h1 id="analisis-hasil" className="text-xl font-bold scroll-mt-8 outline-none text-black text-center" contentEditable suppressContentEditableWarning>BAB III<br/>KESIMPULAN</h1>
+          {metadata.reportType !== 'praktikum' ? (
+            metadata.reportType === 'resume' ? <h1 id="analisis-hasil" className="text-xl font-bold scroll-mt-8 outline-none text-black text-center" contentEditable suppressContentEditableWarning>KESIMPULAN</h1> : <h1 id="analisis-hasil" className="text-xl font-bold scroll-mt-8 outline-none text-black text-center" contentEditable suppressContentEditableWarning>BAB III<br/>KESIMPULAN</h1>
           ) : (
             <h2 id="analisis-hasil" className="font-bold text-lg mt-8 scroll-mt-8 text-black outline-none" contentEditable suppressContentEditableWarning>D. Analisis Hasil:</h2>
           )}
           {Array.isArray(cAnalysis) ? (
-            <div className={`${metadata.reportType === 'kuliah' ? 'mt-8 ' : 'pl-4 '}space-y-6 text-gray-900 text-justify outline-none border border-transparent focus:border-gray-300 focus:bg-gray-50 p-2 rounded transition-all`}>
+            <div className={`${metadata.reportType !== 'praktikum' ? 'mt-8 ' : 'pl-4 '}space-y-6 text-gray-900 text-justify outline-none border border-transparent focus:border-gray-300 focus:bg-gray-50 p-2 rounded transition-all`}>
               {cAnalysis.map((item, idx) => {
-                const img = item.imageIndex !== undefined ? implImages[item.imageIndex] : null;
-                const chapterPrefix = metadata.reportType === 'kuliah' ? 'III' : 'II';
+                const img = (item.imageIndex !== undefined && implImages[item.imageIndex] && !usedImplImageIndexes.has('implementasi-' + item.imageIndex)) ? implImages[item.imageIndex] : null;
+                const chapterPrefix = metadata.reportType !== 'praktikum' ? 'III' : 'II';
                 return (
                   <div key={idx} className="space-y-4">
                     {img && (
                       <div className="mb-4">
                         {item.caption && <h3 className="font-bold mb-2">{item.caption.replace(/['"]/g, '')}</h3>}
-                        <PreviewImage src={img.dataUrl} caption={`Gambar ${chapterPrefix}.\${nextImgIdxII++} ${item.caption || 'Output Visual'}`} />
+                        <PreviewImage src={img.dataUrl} caption={`Gambar ${chapterPrefix}.${nextImgIdxII++} ${item.caption || 'Output Visual'}`} />
                       </div>
                     )}
                     {item.teks && (
@@ -689,7 +696,7 @@ function ReportPreviewInner({
             </div>
           ) : (
             <div 
-              className={`${metadata.reportType === 'kuliah' ? 'mt-8 ' : 'pl-4 '}prose prose-sm max-w-none text-gray-900 text-justify outline-none border border-transparent focus:border-gray-300 focus:bg-gray-50 p-2 rounded transition-all`} 
+              className={`\${metadata.reportType !== 'praktikum' ? 'mt-8 ' : 'pl-4 '}prose prose-sm max-w-none text-gray-900 text-justify outline-none border border-transparent focus:border-gray-300 focus:bg-gray-50 p-2 rounded transition-all`} 
               contentEditable suppressContentEditableWarning
               onBlur={(e) => {
                 if (onAiDataChange && aiData) {
@@ -701,7 +708,7 @@ function ReportPreviewInner({
             </div>
           )}
 
-          {metadata.reportType !== 'kuliah' && (
+          {metadata.reportType === 'praktikum' && (
             <div className="mt-8">
               <h2 id="ulasan-praktikum" className="font-bold text-lg scroll-mt-8 text-black outline-none" contentEditable suppressContentEditableWarning>E. Ulasan Praktikum:</h2>
               <div 
@@ -721,7 +728,7 @@ function ReportPreviewInner({
       </PreviewPage>
 
       {/* 9. Post Test */}
-      {metadata.reportType !== 'kuliah' && (
+      {metadata.reportType === 'praktikum' && (
         <PreviewPage studentName={metadata.nama} pageNumber={4 + Math.ceil(implElements.length / 2)}>
           <h1 id="post-test" className="text-xl font-bold scroll-mt-8 outline-none text-black" contentEditable suppressContentEditableWarning>III. Post Test</h1>
           <div className="pl-4 space-y-6">

@@ -62,7 +62,7 @@ export async function createImagesParagraphs(
           alignment: AlignmentType.CENTER,
           children: [
             new TextRun({
-              text: `Gambar ${bab}.${index} ${prefix}`,
+              text: `Gambar ${bab ? bab + '.' : ''}${index} ${prefix}`,
               size: 22,
               font: FONT_CALIBRI,
             }),
@@ -412,7 +412,7 @@ export async function renderOrphanImages(
           alignment: AlignmentType.CENTER,
           children: [
             new TextRun({
-              text: `Gambar ${bab}.${index} ${orphan.caption}`,
+              text: `Gambar ${bab ? bab + '.' : ''}${index} ${orphan.caption}`,
               size: 22,
               font: FONT_CALIBRI,
             }),

@@ -19,6 +19,7 @@ import {
 const baseCtx = (overrides: Partial<GenerationPromptCtx> = {}): GenerationPromptCtx => ({
   isKuliah: false,
   totalImages: 12,
+  totalCells: 15,
   judulLaporan: 'Visualisasi Data Bar Chart',
   mataPraktikum: 'Visualisasi Data',
   preTest: '-',
@@ -32,7 +33,7 @@ describe('buildGenerationPrompt — context interpolation', () => {
   it('embeds total image count, judul, post-test, and notebook data', () => {
     const ctx = baseCtx({ totalImages: 27 });
     const prompt = buildGenerationPrompt(ctx);
-    expect(prompt).toContain('TOTAL GAMBAR/VISUAL YANG DIKIRIMKAN ADALAH: 27 gambar.');
+    expect(prompt).toContain('TOTAL GAMBAR/VISUAL: 27 gambar.');
     expect(prompt).toContain('Visualisasi Data Bar Chart');
     expect(prompt).toContain('Ubah warna bar');
     expect(prompt).toContain('No notebook provided.');
@@ -135,12 +136,12 @@ describe('GENERATION_SYSTEM_INSTRUCTION', () => {
 
 describe('buildBatchContinuationMessage', () => {
   it('embeds the loop number and total image count', () => {
-    expect(buildBatchContinuationMessage(2, 17)).toContain('batch 2');
-    expect(buildBatchContinuationMessage(2, 17)).toContain('17 gambar');
+    expect(buildBatchContinuationMessage(2, 17, 10)).toContain('batch 2');
+    expect(buildBatchContinuationMessage(2, 17, 10)).toContain('17 gambar');
   });
 
   it('reminds the model to fill imageIndex and concrete observations on continuation', () => {
-    const msg = buildBatchContinuationMessage(3, 5);
+    const msg = buildBatchContinuationMessage(3, 5, 10);
     expect(msg).toContain('imageIndex');
     expect(msg.toLowerCase()).toContain('observasi visual');
   });

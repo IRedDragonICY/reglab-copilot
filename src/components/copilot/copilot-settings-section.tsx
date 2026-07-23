@@ -25,7 +25,7 @@ import { useAppStore } from '@/lib/store';
 import type { CopilotSettings } from '@/lib/copilot/types';
 
 const MIN_ITER = 1;
-const MAX_ITER = 30;
+const MAX_ITER = 999;
 
 interface ToggleRowProps {
   label: string;

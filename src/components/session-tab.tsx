@@ -293,7 +293,7 @@ export function SessionTab({ sessionId }: { sessionId: string }) {
     }
     saveCurrentSession();
     await generateReportAI({
-      metadata, preTest, preTestImages, modulContext, postTest, postTestImages, implImages, ulasanPraktikum,
+      metadata, setMetadata, preTest, preTestImages, modulContext, postTest, postTestImages, implImages, ulasanPraktikum,
       parsedNotebooks, notebookFiles, postTestParsedNotebooks, postTestNotebookFiles,
       session, store, setAiPreviewData, setGeneratedDocxBlob
     });
@@ -303,7 +303,7 @@ export function SessionTab({ sessionId }: { sessionId: string }) {
 
   const handleCompileEdit = async () => {
     await compileEditAI({
-      chatInput, setChatInput, aiPreviewData, setAiPreviewData, metadata, parsedNotebooks, postTestParsedNotebooks,
+      chatInput, setChatInput, aiPreviewData, setAiPreviewData, metadata, setMetadata, parsedNotebooks, postTestParsedNotebooks,
       preTestImages, implImages, postTestImages, modulContext, postTest, setGeneratedDocxBlob, session, store
     });
   };
@@ -354,7 +354,7 @@ export function SessionTab({ sessionId }: { sessionId: string }) {
               chatHistory={chatHistory} isGenerating={isGenerating} statusText={statusText}
               selectedModelName={selectedModelName} setSelectedModelName={setSelectedModelName} availableModels={AVAILABLE_MODELS}
               handleGenerate={handleGenerate} aiPreviewData={aiPreviewData} chatInput={chatInput} setChatInput={setChatInput} handleCompileEdit={handleCompileEdit}
-              sessionTitle={session?.title || getFormattedJudulPertemuan(metadata) || metadata.mataPraktikum || 'New chat'}
+              sessionTitle={session?.title || getFormattedJudulPertemuan(metadata, aiPreviewData) || metadata.mataPraktikum || 'New chat'}
               onNewChat={clearChat}
               onClose={() => store.toggleCopilot()}
               runState={runState} iteration={iteration} maxLoops={maxLoops}

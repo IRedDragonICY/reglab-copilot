@@ -115,7 +115,7 @@ export default function AppMain() {
   
 
   // Resize logic for Copilot Sidebar
-  const isSidebarVisible = store.isCopilotOpen;
+  const isSidebarVisible = store.isCopilotOpen && isDocView;
   const [sidebarWidth, setSidebarWidth] = useState(380);
   const [isDragging, setIsDragging] = useState(false);
   const startXRef = useRef(0);

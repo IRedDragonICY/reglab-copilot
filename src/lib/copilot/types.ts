@@ -93,7 +93,7 @@ export interface LoopCursor {
   accumulatedAiData: AIReportData;
   mode: 'append' | 'replace';
   /** Resolved at runtime to the actual function declaration. */
-  declarationKey: 'praktikum' | 'kuliah';
+  declarationKey: 'praktikum' | 'kuliah' | 'resume';
   systemInstruction: string;
   modelId: string;
   maxLoops: number;
@@ -283,5 +283,5 @@ export const DEFAULT_COPILOT_SETTINGS = {
   autoAccept: true,
   googleSearch: false,
   codeExecution: false,
-  maxIterations: 15,
+  maxIterations: 100,
 } as const satisfies CopilotSettings;

@@ -23,6 +23,7 @@ import type {
   TaskStatus,
   LoopCursor,
 } from '@/lib/types';
+import { isPlaceholderTitle } from '@/lib/types';
 import { ParsedNotebook } from '@/lib/parser';
 import { useAppStore, WELCOME_MESSAGE, hydrateSession } from '@/lib/store';
 import {
@@ -699,8 +700,27 @@ export function useCopilotAI(session?: ReportSession | null) {
   /** Build callbacks for the agent loop, bridging into React state + the store. */
   const makeAgentCallbacks = (
     setAiPreviewData: (data: AIReportData) => void,
+    setMetadataArg?: (meta: any) => void,
   ): AgentLoopCallbacks & { activeMsgId: string } => {
     const handle = { activeMsgId: '' };
+
+    const autoUpdateTitle = (next: AIReportData) => {
+      const generatedTitle =
+        next.judulLaporan ||
+        (next as any)?.kuliah?.judul_laporan ||
+        (next as any)?.resume?.judul_laporan ||
+        (next as any)?.praktikum?.judul_laporan ||
+        (next as any)?.judul_laporan;
+
+      if (generatedTitle && setMetadataArg) {
+        setMetadataArg((prev: any) => {
+          if (prev && isPlaceholderTitle(prev.judulPertemuan)) {
+            return { ...prev, judulPertemuan: generatedTitle };
+          }
+          return prev;
+        });
+      }
+    };
 
     return Object.assign(handle, {
       onStatus: (s: string) => setStatusText(s),
@@ -733,10 +753,14 @@ export function useCopilotAI(session?: ReportSession | null) {
         setChatHistory((prev) => prev.map((m) => (m.id === id ? { ...m, tools } : m)));
       },
 
-      onPreviewMerge: setAiPreviewData,
+      onPreviewMerge: (next: AIReportData) => {
+        setAiPreviewData(next);
+        autoUpdateTitle(next);
+      },
 
       onMergeComplete: (next: AIReportData) => {
         setAiPreviewData(next);
+        autoUpdateTitle(next);
       },
 
       onCheckpointRequest: ({ aiData, loopIndex }: { aiData: AIReportData; loopIndex: number }) => {
@@ -843,7 +867,7 @@ export function useCopilotAI(session?: ReportSession | null) {
       mode: 'append' | 'replace';
       initial: AIReportData;
       ctx: ToolExecutionContext;
-      declarationKey: 'praktikum' | 'kuliah';
+      declarationKey: 'praktikum' | 'kuliah' | 'resume';
       callbacks: ReturnType<typeof makeAgentCallbacks>;
       resumeCursor?: LoopCursor;
     },
@@ -956,9 +980,17 @@ export function useCopilotAI(session?: ReportSession | null) {
         const liveSession = sessionRef.current;
         if (liveSession) saveSession({ ...liveSession, aiData: next });
       };
-      const callbacks = makeAgentCallbacks(setAiPreviewData);
+      const callbacks = makeAgentCallbacks(
+        setAiPreviewData,
+        (updated: any) => {
+          if (sessionRef.current) {
+            const newMeta = typeof updated === 'function' ? updated(sessionRef.current.metadata) : updated;
+            saveSession({ ...sessionRef.current, metadata: newMeta });
+          }
+        }
+      );
       const declaration =
-        cursor.declarationKey === 'kuliah'
+        cursor.declarationKey === 'kuliah' || cursor.declarationKey === 'resume'
           ? generateKuliahReportDeclaration
           : generateReportDeclaration;
       await runAgent(apiKeyToUse, {
@@ -967,7 +999,7 @@ export function useCopilotAI(session?: ReportSession | null) {
         systemInstruction: cursor.systemInstruction,
         declaration,
         maxLoops: cursor.maxLoops,
-        sysMsgBuilder: (loop) => buildBatchContinuationMessage(loop, 0),
+        sysMsgBuilder: (loop) => buildBatchContinuationMessage(loop, 0, 0),
         mode: cursor.mode,
         initial: cursor.accumulatedAiData,
         ctx: defaultCtx(cursor.accumulatedAiData),
@@ -996,6 +1028,7 @@ export function useCopilotAI(session?: ReportSession | null) {
     ulasanPraktikum,
     session: sessionArg,
     store,
+    setMetadata,
     setAiPreviewData,
     setGeneratedDocxBlob,
   }: any) => {
@@ -1017,6 +1050,7 @@ export function useCopilotAI(session?: ReportSession | null) {
       setGeneratedDocxBlob(null);
 
       let notebookPromptData = 'No notebook provided. Rely on images and context.';
+      let totalCells = 0;
       const combinedParsedNotebooks = [...parsedNotebooks, ...postTestParsedNotebooks];
       const notebookImagesToAppend: { nbIdx: number; cellIdx: number; base64: string }[] = [];
 
@@ -1081,11 +1115,13 @@ export function useCopilotAI(session?: ReportSession | null) {
           });
         });
         notebookPromptData = JSON.stringify(allCells);
+        totalCells = allCells.length;
       }
 
       const totalImages =
         preTestImages.length + implImages.length + postTestImages.length + notebookImagesToAppend.length;
       const isKuliah = metadata.reportType === 'kuliah';
+      const isResume = metadata.reportType === 'resume';
 
       setChatHistory((prev) => [
         ...prev,
@@ -1104,7 +1140,9 @@ export function useCopilotAI(session?: ReportSession | null) {
 
       const prompt = buildGenerationPrompt({
         isKuliah,
+        isResume,
         totalImages,
+        totalCells,
         judulLaporan: sessionArg?.metadata?.judulPertemuan || '',
         mataPraktikum: sessionArg?.metadata?.mataPraktikum || '',
         preTest,
@@ -1150,11 +1188,11 @@ export function useCopilotAI(session?: ReportSession | null) {
       const contentsHistory: Content[] = [{ role: 'user', parts: initialParts }];
       const selectedModelId =
         AVAILABLE_MODELS.find((m) => m.name === selectedModelName)?.id || 'gemini-3.1-pro-preview';
-      const activeDeclaration = isKuliah
+      const activeDeclaration = isKuliah || isResume
         ? generateKuliahReportDeclaration
         : generateReportDeclaration;
 
-      const callbacks = makeAgentCallbacks(setAiPreviewData);
+      const callbacks = makeAgentCallbacks(setAiPreviewData, setMetadata);
 
       // Build the executor context. The notebook image bucket is the
       // base64 list we already extracted above so `inspect_image` with
@@ -1179,11 +1217,11 @@ export function useCopilotAI(session?: ReportSession | null) {
         systemInstruction: GENERATION_SYSTEM_INSTRUCTION,
         declaration: activeDeclaration,
         maxLoops: copilotSettings.maxIterations,
-        sysMsgBuilder: (loop) => buildBatchContinuationMessage(loop, totalImages),
+        sysMsgBuilder: (loop) => buildBatchContinuationMessage(loop, totalImages, totalCells),
         mode: 'append',
         initial: EMPTY_AI_DATA,
         ctx,
-        declarationKey: isKuliah ? 'kuliah' : 'praktikum',
+        declarationKey: isKuliah ? 'kuliah' : isResume ? 'resume' : 'praktikum',
         callbacks,
       });
 
@@ -1209,8 +1247,22 @@ export function useCopilotAI(session?: ReportSession | null) {
       toast.success('Laporan berhasil di-generate!');
       setProgress(80);
 
+      const generatedTitle =
+        (accumulatedAiData as any)?.kuliah?.judul_laporan ||
+        (accumulatedAiData as any)?.resume?.judul_laporan ||
+        (accumulatedAiData as any)?.praktikum?.judul_laporan ||
+        (accumulatedAiData as any)?.judul_laporan;
+
+      const updatedMetadata = { ...metadata };
+      if (generatedTitle && isPlaceholderTitle(updatedMetadata.judulPertemuan)) {
+        updatedMetadata.judulPertemuan = generatedTitle;
+      }
+      if (typeof setMetadata === 'function') {
+        setMetadata(updatedMetadata);
+      }
+
       await buildAndSetDocx(
-        metadata,
+        updatedMetadata,
         combinedParsedNotebooks,
         accumulatedAiData,
         preTestImages,
@@ -1229,7 +1281,8 @@ export function useCopilotAI(session?: ReportSession | null) {
       if (liveSession) {
         store.saveSession({
           ...liveSession,
-          title: metadata.judulPertemuan,
+          metadata: updatedMetadata,
+          title: updatedMetadata.judulPertemuan || liveSession.title,
           aiData: accumulatedAiData,
         });
       }
@@ -1259,6 +1312,7 @@ export function useCopilotAI(session?: ReportSession | null) {
     setGeneratedDocxBlob,
     session: sessionArg,
     store,
+    setMetadata,
   }: any) => {
     if (isGenerating) return;
     if (!chatInput.trim() || !aiPreviewData) return;
@@ -1318,9 +1372,18 @@ export function useCopilotAI(session?: ReportSession | null) {
       const selectedModelId =
         AVAILABLE_MODELS.find((m) => m.name === selectedModelName)?.id || 'gemini-3.1-pro-preview';
       const isKuliah = sessionArg && sessionArg.metadata?.reportType === 'kuliah';
-      const activeDeclaration = isKuliah ? generateKuliahReportDeclaration : generateReportDeclaration;
+      const isResume = sessionArg && sessionArg.metadata?.reportType === 'resume';
+      const activeDeclaration = isKuliah || isResume ? generateKuliahReportDeclaration : generateReportDeclaration;
       const contentsHistory: Content[] = [{ role: 'user', parts: [{ text: prompt } as Part] }];
-      const callbacks = makeAgentCallbacks(setAiPreviewData);
+      const callbacks = makeAgentCallbacks(
+        setAiPreviewData,
+        setMetadata || ((updated: any) => {
+          if (sessionArg && typeof setSession === 'function') {
+            const newMeta = typeof updated === 'function' ? updated(sessionArg.metadata) : updated;
+            setSession({ ...sessionArg, metadata: newMeta });
+          }
+        })
+      );
 
       const ctx: ToolExecutionContext = {
         images: {
@@ -1343,7 +1406,7 @@ export function useCopilotAI(session?: ReportSession | null) {
         mode: 'replace',
         initial: aiPreviewData,
         ctx,
-        declarationKey: isKuliah ? 'kuliah' : 'praktikum',
+        declarationKey: isKuliah ? 'kuliah' : isResume ? 'resume' : 'praktikum',
         callbacks,
       });
 
@@ -1356,9 +1419,23 @@ export function useCopilotAI(session?: ReportSession | null) {
         },
       ]);
 
+      const generatedTitleEdit =
+        (accumulatedAiData as any)?.kuliah?.judul_laporan ||
+        (accumulatedAiData as any)?.resume?.judul_laporan ||
+        (accumulatedAiData as any)?.praktikum?.judul_laporan ||
+        (accumulatedAiData as any)?.judul_laporan;
+
+      const updatedMetadataEdit = { ...metadata };
+      if (generatedTitleEdit && isPlaceholderTitle(updatedMetadataEdit.judulPertemuan)) {
+        updatedMetadataEdit.judulPertemuan = generatedTitleEdit;
+      }
+      if (typeof setMetadata === 'function') {
+        setMetadata(updatedMetadataEdit);
+      }
+
       const combinedParsedNotebooks = [...parsedNotebooks, ...postTestParsedNotebooks];
       await buildAndSetDocx(
-        metadata,
+        updatedMetadataEdit,
         combinedParsedNotebooks,
         accumulatedAiData,
         preTestImages,
@@ -1375,7 +1452,8 @@ export function useCopilotAI(session?: ReportSession | null) {
       if (liveSession) {
         store.saveSession({
           ...liveSession,
-          title: metadata.judulPertemuan,
+          metadata: updatedMetadataEdit,
+          title: updatedMetadataEdit.judulPertemuan || liveSession.title,
           aiData: accumulatedAiData,
         });
       }

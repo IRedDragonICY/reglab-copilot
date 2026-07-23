@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { ScheduleManager } from '@/components/schedule-manager';
 import { toast } from 'sonner';
+import { ReportTracker } from '@/components/report-tracker';
 
 /* ---------------------------------------------------------------------------
    Flat panel primitives — no shadows, crisp 1px borders.
@@ -138,21 +139,21 @@ export function HomeTab() {
         {/* ==================================================
             LEFT COLUMN (span 8): Schedule + Progress
         ================================================== */}
-        <div className="lg:col-span-7 xl:col-span-8 flex flex-col gap-2 min-h-0">
+        <div className="lg:col-span-7 xl:col-span-8 flex flex-col gap-4 min-h-0 overflow-y-auto pr-1 pb-4">
           {/* Schedule */}
-          <div className="shrink-0 flex flex-col max-h-[50%] min-h-[220px]">
+          <div className="shrink-0 flex flex-col">
             <ScheduleManager />
           </div>
 
           {/* Progress Tracker */}
           {praktikumSubjects.length > 0 && (
-            <Panel className="flex-1">
+            <Panel className="shrink-0">
               <PanelHeader
                 icon={<BarChart3 className="w-3.5 h-3.5" />}
                 title="Progress Tracker"
                 meta={`${praktikumSubjects.length} subjects`}
               />
-              <div className="flex-1 overflow-y-auto">
+              <div className="shrink-0">
                 <div className="grid grid-cols-1 xl:grid-cols-2">
                   {praktikumSubjects.map((subject, idx) => {
                     const completed = groupedPraktikum[subject];
@@ -255,6 +256,9 @@ export function HomeTab() {
               </div>
             </Panel>
           )}
+
+          {/* Add ReportTracker below the Progress Tracker */}
+          <ReportTracker />
         </div>
 
         {/* ==================================================
@@ -358,7 +362,7 @@ export function HomeTab() {
                             )}
                             {session.metadata.judulPertemuan && (
                               <span className="truncate text-[#6E6E6E]">
-                                {getFormattedJudulPertemuan(session.metadata)}
+                                {getFormattedJudulPertemuan(session.metadata, session.aiData)}
                               </span>
                             )}
                           </div>

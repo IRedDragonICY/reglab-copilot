@@ -48,6 +48,7 @@ export function ScheduleManager() {
         const newSchedules: PracticumSchedule[] = data.schedules.map((s: any) => ({
           ...s,
           id: generateId(),
+          type: 'praktikum'
         }));
         store.setSchedules([...store.schedules, ...newSchedules]);
         setInputText('');
@@ -59,6 +60,79 @@ export function ScheduleManager() {
       toast.error('Gagal memproses jadwal.');
     } finally {
       setIsParsing(false);
+    }
+  };
+
+  const [isSimeruSyncing, setIsSimeruSyncing] = useState(false);
+
+  const handleSimeruSync = async () => {
+    if (!inputText.trim()) {
+      toast.error('Masukkan KRS Text terlebih dahulu.');
+      return;
+    }
+
+    setIsSimeruSyncing(true);
+    try {
+      // Very basic local parsing of the pasted KRS text to extract Kode and Kelas
+      // Expected format: NO. KELAS KODE MATA KULIAH SKS ...
+      // e.g.: 1 B 211861131 Deep Learning 3 2026-02-28 08:01:01 2200018401
+      const targetCourses: {kode: string, kelas: string}[] = [];
+      const lines = inputText.split('\n');
+      for (const line of lines) {
+        const parts = line.trim().split(/\s+/);
+        if (parts.length >= 4) {
+          // Assuming typical UAD KRS format: NO KELAS KODE MATAKULIAH...
+          // If the second token is 1 char (Kelas) and third is ~9 chars (Kode)
+          const kelas = parts[1];
+          const kode = parts[2];
+          if (/^[A-Z]$/i.test(kelas) && /^\d+$/.test(kode)) {
+            targetCourses.push({ kode, kelas });
+          }
+        }
+      }
+
+      if (targetCourses.length === 0) {
+        toast.error('Tidak ada mata kuliah yang terdeteksi dari teks KRS.');
+        setIsSimeruSyncing(false);
+        return;
+      }
+
+      const res = await fetch('/api/crawl-simeru', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: 'mahasiswa',
+          password: 'mahasiswa',
+          targetCourses
+        })
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Failed to sync with Simeru');
+      }
+
+      const data = await res.json();
+      if (data.schedules && Array.isArray(data.schedules)) {
+        if (data.schedules.length === 0) {
+          toast.warning('Tidak ada jadwal yang cocok di Simeru.');
+          return;
+        }
+        const newSchedules: PracticumSchedule[] = data.schedules.map((s: any) => ({
+          ...s,
+          id: generateId(),
+          type: 'kuliah'
+        }));
+        store.setSchedules([...store.schedules, ...newSchedules]);
+        setInputText('');
+        setShowConfig(false);
+        toast.success(`Berhasil sinkronisasi ${newSchedules.length} jadwal kuliah`);
+      }
+    } catch (error: any) {
+      console.error(error);
+      toast.error(error.message || 'Gagal sinkronisasi dari Simeru');
+    } finally {
+      setIsSimeruSyncing(false);
     }
   };
 
@@ -583,31 +657,43 @@ export function ScheduleManager() {
             </div>
           </div>
         ) : showConfig ? (
-          <div className="p-4 space-y-3">
-            <label className="block text-[9px] font-medium tracking-[0.14em] uppercase text-[#6E6E6E]">
-              Paste schedule table
-            </label>
-            <Textarea
-              placeholder="Paste schedule (No, Praktikum, Dosen, Hari, Jam…)"
-              value={inputText}
-              onChange={(e) => setInputText(e.target.value)}
-              className="min-h-[120px] bg-[#0A0A0A] border-[#1F1F1F] rounded-sm font-mono text-[11px] text-[#EDEDED] focus-visible:ring-0 focus-visible:border-[#2F81F7] resize-none"
-            />
-            <div className="flex justify-end">
+          <div className="p-4 space-y-4">
+            <div className="space-y-3">
+              <label className="block text-[9px] font-medium tracking-[0.14em] uppercase text-[#6E6E6E]">
+                Paste schedule table (Praktikum / Kuliah)
+              </label>
+              <Textarea
+                placeholder="Paste schedule (No, Praktikum, Dosen, Hari, Jam… atau teks KRS)"
+                value={inputText}
+                onChange={(e) => setInputText(e.target.value)}
+                className="min-h-[120px] bg-[#0A0A0A] border-[#1F1F1F] rounded-sm font-mono text-[11px] text-[#EDEDED] focus-visible:ring-0 focus-visible:border-[#2F81F7] resize-none"
+              />
+            </div>
+
+            <div className="flex justify-end gap-2">
               <button
-                onClick={handleParse}
-                disabled={isParsing || !inputText.trim()}
-                className="h-7 px-4 flex items-center gap-1.5 text-[11px] font-medium text-white bg-[#2F81F7] hover:bg-[#2563EB] disabled:bg-[#161616] disabled:text-[#4A4A4A] disabled:cursor-not-allowed transition-colors rounded-sm"
+                onClick={inputText.toUpperCase().includes('KELAS') && inputText.toUpperCase().includes('MATA KULIAH') ? handleSimeruSync : handleParse}
+                disabled={isSimeruSyncing || isParsing || !inputText.trim()}
+                className={`h-7 px-4 flex items-center gap-1.5 text-[11px] font-medium text-white disabled:bg-[#161616] disabled:text-[#4A4A4A] disabled:cursor-not-allowed transition-colors rounded-sm ${
+                  inputText.toUpperCase().includes('KELAS') && inputText.toUpperCase().includes('MATA KULIAH')
+                    ? 'bg-[#2EA043] hover:bg-[#238636] shadow-[0_0_15px_rgba(46,160,67,0.15)] hover:shadow-[0_0_20px_rgba(46,160,67,0.25)]'
+                    : 'bg-[#2F81F7] hover:bg-[#2563EB] shadow-[0_0_15px_rgba(47,129,247,0.15)] hover:shadow-[0_0_20px_rgba(47,129,247,0.25)]'
+                }`}
               >
-                {isParsing ? (
+                {isSimeruSyncing || isParsing ? (
                   <>
                     <Loader2 className="w-3 h-3 animate-spin" />
-                    <span className="tracking-wide uppercase">Parsing…</span>
+                    <span className="tracking-wide uppercase">Processing...</span>
+                  </>
+                ) : inputText.toUpperCase().includes('KELAS') && inputText.toUpperCase().includes('MATA KULIAH') ? (
+                  <>
+                    <Calendar className="w-3 h-3" />
+                    <span className="tracking-wide uppercase">Sync Simeru</span>
                   </>
                 ) : (
                   <>
                     <Sparkles className="w-3 h-3" />
-                    <span className="tracking-wide uppercase">Parse</span>
+                    <span className="tracking-wide uppercase">AI Praktikum</span>
                   </>
                 )}
               </button>

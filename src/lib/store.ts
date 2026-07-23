@@ -554,7 +554,7 @@ export const useAppStore = create<AppState>()(
         // `{ autoAccept: false }` doesn't accidentally re-clamp and
         // potentially repair a corrupted slice silently.
         if (patch.maxIterations !== undefined) {
-          next.maxIterations = Math.max(1, Math.min(30, patch.maxIterations));
+          next.maxIterations = Math.max(1, Math.min(999, patch.maxIterations));
         }
         return { copilotSettings: next };
       }),

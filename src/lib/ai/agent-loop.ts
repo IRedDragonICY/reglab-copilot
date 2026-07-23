@@ -218,7 +218,7 @@ export interface AgentLoopArgs {
    */
   pendingUserSteer?: string;
   /** Praktikum vs kuliah — persisted on `LoopCursor` for resume fidelity. */
-  declarationKey?: 'praktikum' | 'kuliah';
+  declarationKey?: 'praktikum' | 'kuliah' | 'resume';
 }
 
 /**
@@ -450,7 +450,7 @@ export async function runAgentLoop(args: AgentLoopArgs): Promise<AIReportData> {
     : args.systemInstruction;
   let resolvedModelId = cursor ? cursor.modelId : args.modelId;
   const resolvedMaxLoops = cursor ? cursor.maxLoops : args.maxLoops;
-  const resolvedDeclarationKey: 'praktikum' | 'kuliah' = cursor
+  const resolvedDeclarationKey: 'praktikum' | 'kuliah' | 'resume' = cursor
     ? cursor.declarationKey
     : args.declarationKey ?? 'praktikum';
   const resolvedEnableGoogleSearch = cursor
@@ -542,7 +542,7 @@ export async function runAgentLoop(args: AgentLoopArgs): Promise<AIReportData> {
                 systemInstruction: resolvedSystemInstruction,
                 temperature: 0.2,
                 ...(resolvedModelId.includes('gemini-3')
-                  ? { thinkingConfig: { thinkingLevel: 'medium' } as any }
+                  ? {}
                   : { thinkingConfig: { includeThoughts: true } as any }),
                 tools: buildSdkTools() as never,
                 toolConfig: { functionCallingConfig: { mode: FunctionCallingConfigMode.AUTO } },
@@ -705,6 +705,19 @@ export async function runAgentLoop(args: AgentLoopArgs): Promise<AIReportData> {
     // ----- Dispatch each pending tool in order -----
     if (pendingTools.length === 0) {
       // No tool calls in this iteration → terminator.
+      
+      const totalCells = args.ctx?.notebooks.reduce((acc, nb) => acc + nb.cells.filter(c => c.cell_type === 'code').length, 0) || 0;
+      const analyzedCells = new Set(accumulated.cellAnalyses?.map(a => `${a.notebookIndex}-${a.cellIndex}`) || []).size;
+
+      if (totalCells > 0 && analyzedCells < totalCells && loopIndex < resolvedMaxLoops) {
+        activeContents.push({
+          role: 'user',
+          parts: [{ text: `WARNING: You stopped processing but have only analyzed ${analyzedCells} out of ${totalCells} code cells. You MUST continue analyzing the remaining cells using add_cell_analysis in parallel.` } as Part]
+        });
+        isDone = false;
+        continue;
+      }
+
       callbacks.onIterationEnd?.(msgId, [...activeUiTools]);
       isDone = true;
       break;
@@ -860,6 +873,22 @@ export async function runAgentLoop(args: AgentLoopArgs): Promise<AIReportData> {
     }
 
     // ----- Termination conditions -----
+    if (completionRaised) {
+      const totalCells = args.ctx?.notebooks.reduce((acc, nb) => acc + nb.cells.filter(c => c.cell_type === 'code').length, 0) || 0;
+      const analyzedCells = new Set(accumulated.cellAnalyses?.map(a => `${a.notebookIndex}-${a.cellIndex}`) || []).size;
+      
+      if (totalCells > 0 && analyzedCells < totalCells && loopIndex < resolvedMaxLoops) {
+        // Force continuation by simulating a user message that cancels the completion
+        completionRaised = false;
+        activeContents.push({
+          role: 'user',
+          parts: [{ text: `WARNING: You attempted to mark the task complete, but you have only analyzed ${analyzedCells} out of ${totalCells} code cells. You MUST continue analyzing the remaining cells using add_cell_analysis in parallel.` } as Part]
+        });
+        isDone = false;
+        continue;
+      }
+    }
+
     if (completionRaised || clarificationRaised) {
       isDone = true;
       // Emit one final cursor snapshot so the consumer can persist it.

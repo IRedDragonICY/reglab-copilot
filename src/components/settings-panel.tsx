@@ -163,11 +163,22 @@ export function SettingsPanel({
               />
               <span className="text-gray-300">Laporan Kuliah</span>
             </label>
+            <label className="flex items-center gap-2 cursor-pointer text-sm">
+              <input 
+                type="radio" 
+                name="reportType" 
+                value="resume"
+                checked={metadata.reportType === 'resume'}
+                onChange={() => setMetadata({...metadata, reportType: 'resume'})}
+                className="accent-blue-500 bg-[#242424] border-[#444]"
+              />
+              <span className="text-gray-300">Laporan Resume</span>
+            </label>
           </div>
         </div>
         
         <div className="space-y-2">
-          <Label className="text-[#a0a0a0]">{metadata.reportType === 'kuliah' ? 'Mata Kuliah' : 'Mata Praktikum'}</Label>
+          <Label className="text-[#a0a0a0]">{metadata.reportType === 'resume' ? 'Nama Acara / Pameran / Topik' : metadata.reportType === 'kuliah' ? 'Mata Kuliah' : 'Mata Praktikum'}</Label>
           {isAddingMk ? (
             <div className="flex space-x-2">
               <Input placeholder="Baru:" value={newMk} onChange={e => setNewMk(e.target.value)} className="bg-[#242424] border-[#444]"/>
@@ -181,10 +192,20 @@ export function SettingsPanel({
                   <SelectValue placeholder="Pilih..." />
                 </SelectTrigger>
                 <SelectContent className="bg-[#242424] border-[#444] text-gray-200">
-                  {store.schedules.length > 0 && (
+                  {store.schedules.filter((s: any) => s.type === 'praktikum').length > 0 && (
                     <SelectGroup>
                       <SelectLabel className="text-blue-400">Jadwal Praktikum</SelectLabel>
-                      {store.schedules.map((s: any) => (
+                      {store.schedules.filter((s: any) => s.type === 'praktikum').map((s: any) => (
+                        <SelectItem key={s.id} value={`sch:${s.id}`}>
+                          {s.mataPraktikum} ({s.hari} {s.jamMulai})
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  )}
+                  {store.schedules.filter((s: any) => s.type === 'kuliah').length > 0 && (
+                    <SelectGroup>
+                      <SelectLabel className="text-green-400">Jadwal Kuliah</SelectLabel>
+                      {store.schedules.filter((s: any) => s.type === 'kuliah').map((s: any) => (
                         <SelectItem key={s.id} value={`sch:${s.id}`}>
                           {s.mataPraktikum} ({s.hari} {s.jamMulai})
                         </SelectItem>
@@ -192,7 +213,7 @@ export function SettingsPanel({
                     </SelectGroup>
                   )}
                   <SelectGroup>
-                    <SelectLabel className="text-[#888]">Daftar Mata Praktikum</SelectLabel>
+                    <SelectLabel className="text-[#888]">Daftar {metadata.reportType === 'resume' ? 'Acara / Pameran' : metadata.reportType === 'kuliah' ? 'Mata Kuliah' : 'Mata Praktikum'}</SelectLabel>
                     {store.mataPraktikumList.map((mk: string) => (
                       <div key={mk} className="flex items-center w-full group overflow-hidden pl-1">
                         <SelectItem value={mk} className="flex-1 cursor-pointer">{mk}</SelectItem>
@@ -222,7 +243,7 @@ export function SettingsPanel({
         </div>
         
         <div className="space-y-2">
-          <Label className="text-[#a0a0a0]">{metadata.reportType === 'kuliah' ? 'Topik / Judul Laporan' : 'Bab / Judul Pertemuan'}</Label>
+          <Label className="text-[#a0a0a0]">{metadata.reportType === 'resume' ? 'Judul Resume' : metadata.reportType === 'kuliah' ? 'Topik / Judul Laporan' : 'Bab / Judul Pertemuan'}</Label>
           <Input value={metadata.judulPertemuan} onChange={e => setMetadata({...metadata, judulPertemuan: e.target.value})} className="bg-[#242424] border-[#444]"/>
         </div>
         <div className="space-y-2">
@@ -232,7 +253,7 @@ export function SettingsPanel({
               <Input 
                 value={metadata.hariTanggalSesi || ''} 
                 onChange={e => setMetadata({...metadata, hariTanggalSesi: e.target.value})} 
-                className={`bg-[#242424] border-[#444] ${metadata.reportType === 'kuliah' ? 'rounded-r-none border-r-0' : ''}`}
+                className={`bg-[#242424] border-[#444] ${metadata.reportType !== 'praktikum' ? 'rounded-r-none border-r-0' : ''}`}
                 placeholder="Contoh: Senin, 10 Oktober 2023"
               />
               {metadata.reportType === 'kuliah' && (
@@ -296,7 +317,7 @@ export function SettingsPanel({
           </div>
         </div>
 
-        {metadata.reportType !== 'kuliah' && (
+        {metadata.reportType === 'praktikum' && (
           <div className="space-y-2">
             <Label className="text-[#a0a0a0]">Pertemuan Ke-</Label>
             <Select 
@@ -328,8 +349,9 @@ export function SettingsPanel({
           </div>
         )}
 
-        <div className="grid grid-cols-2 gap-2">
-          {metadata.reportType !== 'kuliah' && (
+        <div className={`grid gap-2 ${metadata.reportType === 'praktikum' ? 'grid-cols-2' : 'grid-cols-1'}`}>
+
+          {metadata.reportType === 'praktikum' && (
             <div className="space-y-2">
               <Label className="text-[#a0a0a0]">Laboratorium</Label>
               <Input value={metadata.laboratorium} onChange={e => setMetadata({...metadata, laboratorium: e.target.value})} placeholder="Asisten / Lab" className="bg-[#242424] border-[#444]"/>
@@ -347,7 +369,7 @@ export function SettingsPanel({
           <Database className="w-4 h-4 text-green-400" /> Konten & Referensi
         </h3>
         
-        {metadata.reportType !== 'kuliah' && (
+        {metadata.reportType === 'praktikum' && (
           <div className="space-y-2">
             <Label className="text-[#a0a0a0]">Soal/Jawaban Pre Test</Label>
             <Textarea 
@@ -362,13 +384,13 @@ export function SettingsPanel({
         )}
 
         <div className="space-y-2">
-          <Label className="text-[#a0a0a0]">{metadata.reportType === 'kuliah' ? 'Latar Belakang / Pendahuluan Tugas' : 'Context Modul Praktikum'}</Label>
+          <Label className="text-[#a0a0a0]">{metadata.reportType === 'resume' ? 'Konteks Acara / Pameran / Modul' : metadata.reportType === 'kuliah' ? 'Latar Belakang / Pendahuluan Tugas' : 'Context Modul Praktikum'}</Label>
           <Textarea 
             value={modulContext} 
             onChange={e => setModulContext(e.target.value)} 
             onPaste={(e) => handlePasteToUploader(e, setImplImages)}
             className="h-20 bg-[#242424] border-[#444] resize-none" 
-            placeholder={metadata.reportType === 'kuliah' ? "Beri penjabaran latar belakang / pendahuluan" : "Beri penjabaran agar laporan nyambung"}
+            placeholder={metadata.reportType === 'resume' ? 'Beri penjelasan singkat acara/pameran' : metadata.reportType === 'kuliah' ? 'Beri penjabaran latar belakang / pendahuluan' : 'Beri penjabaran agar laporan nyambung'}
           />
         </div>
 
@@ -402,7 +424,7 @@ export function SettingsPanel({
           <ImageUploader images={implImages} onChange={setImplImages} label="Unggah Tangkapan Layar" />
         </div>
 
-        {metadata.reportType !== 'kuliah' && (
+        {metadata.reportType === 'praktikum' && (
           <div className="space-y-2">
             <Label className="text-[#a0a0a0]">Post-Test / Tugas (Termasuk Bukti Google Form)</Label>
             <Textarea 
@@ -441,7 +463,7 @@ export function SettingsPanel({
           </div>
         )}
 
-        {metadata.reportType !== 'kuliah' && (
+        {metadata.reportType === 'praktikum' && (
           <div className="space-y-2 pt-2">
             <Label className="text-[#a0a0a0]">Feedback / Ulasan Praktikum (Opsional)</Label>
             <Textarea 

@@ -169,6 +169,10 @@ describe('AI function declarations — byte stability', () => {
                   "type": "ARRAY"
                 },
                 "cellAnalyses": "[Circular]",
+                "judul_laporan": {
+                  "description": "Judul laporan/praktikum singkat dan padat yang digenerate secara otomatis berdasarkan konteks/modul JIKA belum ada judul yang diberikan (misalnya \\"Penghitungan Bibit Ikan Berbasis Computer Vision dan YOLO\\").",
+                  "type": "STRING"
+                },
                 "langkah_kerja": {
                   "description": "Penjelasan naratif (narasi dengan format markdown list agar rapi dan bagus) step-by-step implementasinya",
                   "type": "STRING"
@@ -179,6 +183,7 @@ describe('AI function declarations — byte stability', () => {
                 }
               },
               "required": [
+                "judul_laporan",
                 "alat_dan_bahan",
                 "langkah_kerja",
                 "analisis_hasil",

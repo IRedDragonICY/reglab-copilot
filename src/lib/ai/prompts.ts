@@ -12,7 +12,9 @@
 
 export interface GenerationPromptCtx {
   isKuliah: boolean;
+  isResume?: boolean;
   totalImages: number;
+  totalCells: number;
   judulLaporan: string;
   mataPraktikum: string;
   preTest: string;
@@ -23,8 +25,12 @@ export interface GenerationPromptCtx {
 }
 
 export function buildGenerationPrompt(ctx: GenerationPromptCtx): string {
+  const isEventResume = ctx.isResume;
+
   const kuliahLead = ctx.isKuliah
     ? 'PENTING: Ini adalah format LAPORAN KULIAH. Anda WAJIB membuat narasi BAB I PENDAHULUAN secara naratif dan komprehensif ke dalam field `pendahuluan` berdasarkan Modul Context/Goals yang diberikan. Jika tidak ada konteks, buat abstraksi berdasarkan topik laporan.'
+    : ctx.isResume
+    ? 'PENTING: Ini adalah format LAPORAN RESUME. DOKUMEN INI TIDAK MENGGUNAKAN FORMAT BAB (TIDAK ADA BAB I, BAB II, BAB III). Anda WAJIB membuat pengantar/abstrak di field `pendahuluan`. KHUSUS UNTUK RESUME: Lakukan ekstraksi SEMUA TEKS dan INFORMASI dari gambar poster/modul secara SANGAT MENDETAIL dan LENGKAP. DILARANG MENULIS DALAM PARAGRAF UTUH! Anda WAJIB MENGGUNAKAN MARKDOWN HEADING (### Nama Subbab) DAN BULLET POINTS (-) untuk memecah penjelasan menjadi subbab-subbab spesifik sesuai informasi di poster (Contoh Subbab: ### Latar Belakang, ### Tujuan, ### Fitur Produk, ### Cara Kerja, ### Keunggulan Sistem, ### Spesifikasi Hardware/Software, ### Kesimpulan). Potong-potong per subbab agar struktur resume sangat jelas dan komprehensif!'
     : 'Ini adalah format LAPORAN PRAKTIKUM.';
 
   return `
@@ -52,7 +58,7 @@ export function buildGenerationPrompt(ctx: GenerationPromptCtx): string {
         - Setiap gambar bertipe HASIL IMPLEMENTASI/JAWABAN (kategori \`implementasi\` atau \`post_test\`) WAJIB direlasikan melalui \`imageIndex\`, entah itu ke dalam \`cellAnalyses\` ATAUPUN \`analisis_hasil\` (khusus grafik evaluasi).
         - DILARANG mengirimkan gambar ke output tanpa merelasikannya. Gambar tanpa relasi logis akan berstatus yatim piatu yang merupakan kegagalan mutlak tugas Anda.
         - PENTING UNTUK POST-TEST: Meskipun Anda sudah menjawab esai/soal post_test di object \`answers\`, Anda TETAP WAJIB membuat entri di \`cellAnalyses\` (baik di objek \`praktikum\` maupun \`post_test\`) dengan \`section: 'post_test'\` khusus untuk menjelaskan baris kode / perubahan teknis apa yang Anda modifikasi pada screenshot tersebut. Sadarilah konteks praktikum sebelumnya! Jelaskan secara natural bagian kode mana yang "diubah" dari langkah praktikum untuk menyelesaikan soal post-test ini (misal: "Untuk menyelesaikan tugas ini, parameter \\\`numDisparities\\\` yang sebelumnya bernilai 16 pada langkah praktikum diubah menjadi 80..."). Jangan hanya menjawab di \`answers\` lalu meninggalkan gambar post-test tanpa penjelasan komparatif di \`cellAnalyses\`.
-        - Sebelum memanggil \`generate_report\` di batch terakhir, lakukan self-check: pastikan SETIAP gambar implementasi dan post_test yang dikirim user sudah direlasikan secara utuh. Jika jumlah entri \`cellAnalyses\` masih kurang dari total gambar, Anda WAJIB melanjutkannya.
+        - Sebelum memanggil \`add_cell_analysis\` di batch terakhir, lakukan self-check: pastikan SETIAP gambar implementasi dan post_test yang dikirim user sudah direlasikan secara utuh. Jika jumlah entri \`cellAnalyses\` masih kurang dari total gambar, Anda WAJIB melanjutkannya.
         - Untuk gambar Post-Test: \`section\` HARUS \`'post_test'\`. Untuk gambar Implementasi: \`section\` HARUS \`'implementasi'\`. Jangan tertukar.
 
         PENJELASAN BLOK KODE NOTEBOOK / FILE KODE (WAJIB JIKA ADA .IPYNB ATAU FILE KODE):
@@ -96,8 +102,9 @@ export function buildGenerationPrompt(ctx: GenerationPromptCtx): string {
            - GUNAKAN: "ketika", "mengukur/memeriksa", "semakin buruk / menurun performanya", "memberikan gambaran", "menghitung perbaikan manual".
            Tone harus Semi-Formal Laporan Praktikum yang natural, bukan gaya AI kaku, dan bukan gaya chat santai.
 
-        5. STRUKTUR PARAGRAF NATURAL (HINDARI POLA ROBOTIK):
-           - DILARANG KERAS MENGGUNAKAN LISTING/BULLETS DI SELURUH LAPORAN: Untuk bagian Langkah Kerja, Analisis, hingga JAWABAN POST-TEST dan penjelasan eksperimen, SEMUANYA WAJIB ditulis dalam bentuk PARAGRAF NARATIF (cerita komparatif). DILARANG KERAS menggunakan format bullet points (•, -, 1, 2, 3) atau list bertingkat untuk menjabarkan arsitektur/parameter.
+        5. STRUKTUR PARAGRAF & SUBBAB (SANGAT KRITIS):
+           - KHUSUS LAPORAN PRAKTIKUM/KULIAH: DILARANG KERAS MENGGUNAKAN LISTING/BULLETS. Semuanya WAJIB ditulis dalam bentuk PARAGRAF NARATIF (cerita komparatif).
+           - KHUSUS LAPORAN RESUME: ANDA SANGAT DIIZINKAN DAN WAJIB MENGGUNAKAN SUBBAB (MARKDOWN HEADING SEPERTI ###) SERTA LISTING/BULLETS (•, -, 1, 2, 3) untuk memecah seluruh informasi dari gambar poster secara detail per poin (misalnya: ### Latar Belakang, ### Tujuan, ### Fitur Produk, ### Cara Kerja, ### Keunggulan Sistem, dsb). DILARANG KERAS MENULISNYA DALAM BENTUK PARAGRAF POLOS TANPA SUBBAB!
            - ANTI-DUPLIKASI KETAT (NO REDUNDANCY): DILARANG KERAS mencetak/menghasilkan paragraf yang persis sama dua kali. Pastikan Langkah Kerja dan Ulasan Praktikum hanya dieksekusi satu kali per dokumen!
            - BLACKLIST KATA PEMBUKA: DILARANG KERAS menggunakan kalimat "Proses pengerjaan praktikum dilakukan melalui tahapan sistematis berikut" atau variasi kalimat pengantar list lainnya. Langsung masuk ke paragraf pertama (Contoh awal: "Pada praktikum kali ini, langkah pertama yang dilakukan adalah...").
            - BLACKLIST KATA MEGAH: DILARANG menggunakan kata-kata: ketangguhan, ketiadaan, mengonfirmasi, meregulasi, komprehensif. Gunakan bahasa Indonesia sehari-hari yang sopan (semi-formal).
@@ -113,16 +120,19 @@ export function buildGenerationPrompt(ctx: GenerationPromptCtx): string {
            - SUNTIKAN KENDALA SECARA PAKSA PADA ULASAN PRAKTIKUM: Di bagian Ulasan Praktikum, JANGAN menulis 'praktikum berjalan sangat lancar tanpa kendala'. Anda WAJIB mengarang satu kendala wajar mahasiswa (contoh: bingung menyesuaikan dimensi reshape untuk input LSTM, error saat slicing data, proses training epoch yang lama/GPU limit di Colab, atau penyesuaian hyperparameter yang sulit) jika user tidak menyebutkannya. Jika user menyebutkan kendalanya sendiri, gunakan dan kembangkan kendala dari user tersebut.
 
         MULTI-TURN BATCH PROCESSING (CRITICAL):
-        TOTAL GAMBAR/VISUAL YANG DIKIRIMKAN ADALAH: ${ctx.totalImages} gambar.
-        Untuk menghindari token output terpotong, jalankan metode Agentic Loop:
-        - Panggil \`generate_report\` untuk menyimpan sebagian data (misal 4-8 gambar pertama).
+        TOTAL GAMBAR/VISUAL: ${ctx.totalImages} gambar.
+        TOTAL BLOK/CELL NOTEBOOK: ${ctx.totalCells} cell.
+        
+        PENTING: Karena batasan token output, JANGAN memproses semua gambar/cell sekaligus jika jumlahnya banyak (khususnya untuk laporan / notebook panjang)! Gunakan metode Agentic Loop:
+        - Panggil tool granular seperti \`add_cell_analysis\` secara paralel untuk menyimpan sebagian data saja (misal 5 gambar ATAU 10-15 blok cell pertama).
         - Sistem akan membalas pesan "success".
-        - Panggil lagi \`generate_report\` HANYA untuk melanjutkan sisa gambar/data yang BELUM terekstrak di panggilan sebelumnya.
-        - Sistem otomatis melakukan *append* (penggabungan) pada array \`cellAnalyses\`. JANGAN mengirim ulang data gambar yang sudah dianalisis di batch sebelumnya untuk menghindari duplikasi!
-        - Jika SEMUA ${ctx.totalImages} gambar sudah terekstrak dengan benar, tuliskan teks biasa ("Laporan selesai") dan STOP memanggil fungsi \`generate_report\`.
-
+        - Panggil lagi \`add_cell_analysis\` HANYA untuk melanjutkan sisa gambar / blok cell yang BELUM dianalisis.
+        - Sistem otomatis melakukan *append* (penggabungan) pada array \`cellAnalyses\`. JANGAN mengirim ulang data yang sudah dianalisis di batch sebelumnya (hindari duplikasi)!
+        - JIKA ANDA SUDAH MENCAPAI AKHIR DARI DATA (semua gambar/cell selesai), PASTIKAN SEMUA atribut seperti \`analisis_hasil\`, \`ulasan_praktikum\`, dan \`post_test\` JUGA IKUT DIGENERATE sebelum Anda berhenti. Atribut-atribut ini bisa Anda isi di panggilan terakhir atau panggilan manapun asalkan tidak terlewat.
+        - Jika SEMUA data (gambar & cell) dan ulasan sudah dikirim dengan benar, tuliskan teks biasa ("Laporan selesai") dan STOP memanggil tool (lalu panggil \`mark_task_complete\` di akhir).
+        
         Context Tambahan:
-        Judul Laporan: ${ctx.judulLaporan || '-'}
+        Judul Laporan: ${ctx.judulLaporan || '-'} (PENTING: Jika Judul Laporan ini kosong, '-', atau bertanda kurung siku seperti '[Judul Resume]', Anda WAJIB membuat/meng-generate field 'judul_laporan' yang singkat, padat, profesional, dan sangat spesifik sesuai topik/materi/poster/modul yang diunggah, contoh: 'Sistem Penghitung dan Deteksi Bibit Ikan Berbasis Computer Vision dan YOLO (INOTEKAI)').
         Mata Praktikum / Kuliah: ${ctx.mataPraktikum || '-'}
         Pre-Test Questions: ${ctx.preTest}
         Modul Context/Goals: ${ctx.modulContext}
@@ -149,15 +159,15 @@ ${ctx.currentDataJson}
 
 User Request: "${ctx.userMessage}"
 
-You MUST output the new, updated structured data using the \`generate_report\` tool that satisfies the user's request. Modify ONLY what they asked. Keep the rest of the layout and properties intact.`;
+You MUST output the new, updated structured data using the \`add_cell_analysis\` tool that satisfies the user's request. Modify ONLY what they asked. Keep the rest of the layout and properties intact.`;
 }
 
 export const GENERATION_SYSTEM_INSTRUCTION =
-  'You act as an autonomous AI analyst. Read images, sort them chronologically, extract text from questions, and map visualizations correctly using relative indexes in multi-turn batches. Every implementation / post-test screenshot MUST have a corresponding cellAnalyses entry (even if you answered the post-test question in the `answers` array) with a natural-language Indonesian explanation grounded in concrete details visible in the screenshot. Never use generic boilerplate openers. Keep technical terms in their original English (e.g., "Confusion Matrix" instead of "Matriks Kebingungan").';
+  'You act as an autonomous AI analyst. Read images, sort them chronologically, extract text from questions, and map visualizations correctly using relative indexes in multi-turn batches. Every implementation / post-test screenshot MUST have a corresponding cellAnalyses entry (even if you answered the post-test question in the `answers` array) with a natural-language Indonesian explanation grounded in concrete details visible in the screenshot. Never use generic boilerplate openers. PENTING: Untuk Laporan Resume, ANDA WAJIB MENGGUNAKAN MARKDOWN HEADING (### Nama Subbab) DAN BULLET POINTS (-) untuk memilah informasi ke dalam subbab-subbab spesifik (seperti Latar Belakang, Tujuan, Fitur Produk, Cara Kerja, Keunggulan, dsb) daripada menulis satu paragraf panjang. Keep technical terms in their original English (e.g., "Confusion Matrix" instead of "Matriks Kebingungan").';
 
 export const EDIT_SYSTEM_INSTRUCTION =
   'You act as an editor that modifies data based on user input.';
 
-export function buildBatchContinuationMessage(loop: number, totalImages: number): string {
-  return `Tugas batch ${loop} berhasil diproses. Sistem telah menggabungkan array \`cellAnalyses\` dan \`questions\`. Lanjutkan analisis ke sisa gambar yang belum diekstrak. Jangan mengulang data yang sama. Pastikan setiap gambar implementasi/post_test memiliki entri \`cellAnalyses\` dengan \`imageIndex\` terisi dan \`explanation\` yang berisi observasi visual konkret (file aktif, baris kode, identifier, warna/output, perubahan dari step sebelumnya). Jika semua ${totalImages} gambar sudah diproses, balas dengan teks penutup dan berhenti memanggil fungsi.`;
+export function buildBatchContinuationMessage(loop: number, totalImages: number, totalCells: number): string {
+  return `Tugas batch ${loop} berhasil diproses. Sistem telah menggabungkan array \`cellAnalyses\` dan \`questions\`. Lanjutkan analisis ke sisa gambar atau blok cell yang belum diekstrak. Jangan mengulang data yang sama. Pastikan setiap gambar atau cell memiliki entri \`cellAnalyses\` dengan \`imageIndex\` (untuk gambar) terisi dan \`explanation\` yang berisi observasi visual konkret (file aktif, baris kode, identifier, warna/output, perubahan dari step sebelumnya). JIKA INI ADALAH BATCH TERAKHIR (semua gambar dan cell telah dianalisis), JANGAN LUPA untuk meng-generate atribut penting di akhir laporan seperti \`analisis_hasil\` dan \`ulasan_praktikum\`! Jika semua ${totalImages} gambar dan ${totalCells} cell sudah diproses dan ulasan telah diberikan, balas dengan teks penutup dan berhenti memanggil fungsi.`;
 }

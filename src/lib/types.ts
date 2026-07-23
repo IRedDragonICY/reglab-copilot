@@ -47,7 +47,7 @@ export interface UserImage {
   dataUrl: string;
 }
 
-export type ReportType = 'praktikum' | 'kuliah';
+export type ReportType = 'praktikum' | 'kuliah' | 'resume';
 
 /**
  * Session-local metadata as persisted by Zustand.
@@ -95,6 +95,7 @@ export interface ConclusionParagraph {
 }
 
 export interface AIReportData {
+  judulLaporan?: string;
   pendahuluan?: string;
   preTestAnswers: QAPair[];
   postTestAnswers: QAPair[];
@@ -134,11 +135,55 @@ export interface PracticumSchedule {
   fileNameFormat?: string;
 }
 
-export function getFormattedJudulPertemuan(metadata: Pick<SessionMetadata, 'reportType' | 'judulPertemuan' | 'pertemuan'>): string {
-  if (metadata.reportType === 'kuliah') {
-    return metadata.judulPertemuan || '[Topik Kajian]';
+export function isPlaceholderTitle(title?: string): boolean {
+  if (!title) return true;
+  const trimmed = title.trim();
+  const lower = trimmed.toLowerCase();
+  if (
+    trimmed === '' ||
+    trimmed === '-' ||
+    lower === 'untitled report' ||
+    lower === 'judul resume' ||
+    lower === '[judul resume]' ||
+    lower === 'topik kajian' ||
+    lower === '[topik kajian]' ||
+    lower === 'judul pertemuan' ||
+    lower === '[judul pertemuan]' ||
+    lower === 'topik / acara' ||
+    lower === 'topik/acara' ||
+    lower === '[acara / topik]' ||
+    lower === 'acara / topik' ||
+    lower === 'acara/topik'
+  ) {
+    return true;
   }
-  const rawJudul = metadata.judulPertemuan;
+  if (/^\[.*\]$/.test(trimmed)) return true;
+  return false;
+}
+
+export function getFormattedJudulPertemuan(
+  metadata: Pick<SessionMetadata, 'reportType' | 'judulPertemuan' | 'pertemuan'>,
+  aiData?: any
+): string {
+  const aiTitle =
+    aiData?.judulLaporan ||
+    aiData?.kuliah?.judul_laporan ||
+    aiData?.resume?.judul_laporan ||
+    aiData?.praktikum?.judul_laporan ||
+    aiData?.judul_laporan;
+
+  const rawTitle = metadata.judulPertemuan;
+  const hasUserTitle = rawTitle && !isPlaceholderTitle(rawTitle);
+
+  const titleToUse = hasUserTitle ? rawTitle : (aiTitle || '');
+
+  if (metadata.reportType === 'resume') {
+    return titleToUse || '[Judul Resume]';
+  }
+  if (metadata.reportType === 'kuliah') {
+    return titleToUse || '[Topik Kajian]';
+  }
+  const rawJudul = titleToUse;
   if (!rawJudul) {
     return metadata.pertemuan ? `Pertemuan ke-${metadata.pertemuan}: [Judul Pertemuan]` : '[Judul Pertemuan]';
   }

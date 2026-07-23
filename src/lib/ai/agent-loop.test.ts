@@ -162,7 +162,7 @@ describe('runAgentLoop — backwards-compat snapshot for legacy callers', () => 
       contents,
       systemInstruction: 'sys',
       declaration: { name: 'generate_report' },
-      maxLoops: 5,
+      maxLoops: 2,
       sysMsgBuilder: (loop) => `Continue batch ${loop}`,
       mode: 'append',
       initial: EMPTY_AI_DATA,
@@ -276,5 +276,62 @@ describe('runAgentLoop — backwards-compat snapshot for legacy callers', () => 
     // No assertion needed beyond "did not throw" — onLoopCursorUpdate is
     // omitted, so any internal call would not crash. This guards against
     // the implementation accidentally requiring the callback.
+  });
+});
+
+
+
+describe('runAgentLoop — early termination prevention', () => {
+  beforeEach(() => {
+    mockGenerateContentStream.mockReset();
+    mockGoogleGenAI.mockReset();
+    mockGoogleGenAI.mockImplementation(() => ({
+      models: { generateContentStream: mockGenerateContentStream },
+    }));
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('prevents termination if not all code cells are analyzed', async () => {
+    vi.useFakeTimers();
+
+    // Iteration 1: calls mark_task_complete
+    mockGenerateContentStream.mockResolvedValueOnce(
+      asyncIterable([
+        toolCallChunk('mark_task_complete', { summary: 'Done' })
+      ])
+    );
+    // Iteration 2: returns text
+    mockGenerateContentStream.mockResolvedValueOnce(asyncIterable([textChunk('Okay, continuing')])).mockResolvedValueOnce(asyncIterable([textChunk('Third call')]));
+
+    const ctx = {
+      images: { pre_test: [], implementasi: [], post_test: [], notebook: [] },
+      notebooks: [
+        {
+          cells: [
+            { cell_type: 'code', source: 'print(1)', outputs: [] },
+            { cell_type: 'code', source: 'print(2)', outputs: [] },
+          ]
+        }
+      ],
+      aiData: { cellAnalyses: [] },
+    };
+
+    const result = await runAgentLoop({
+      apiKey: 'test-key',
+      modelId: 'test-model',
+      contents: [{ role: 'user', parts: [{ text: 'Start' }] }],
+      systemInstruction: 'Test',
+      declaration: { name: 'generate_report', description: 'desc', parameters: { type: 'OBJECT', properties: {} } } as any, sysMsgBuilder: () => 'test', mode: 'append',
+      initial: { cellAnalyses: [{ cellIndex: 0, notebookIndex: 0, section: 'implementasi', caption: '1', explanation: '1' }], preTestAnswers: [], postTestAnswers: [], stepByStepNarrative: '', codeAnalysis: '' },
+      maxLoops: 2,
+      ctx: ctx as any,
+      callbacks: {},
+    });
+
+    // The SDK should have been called twice because it intercepted the completion
+    expect(mockGenerateContentStream).toHaveBeenCalledTimes(2);
   });
 });

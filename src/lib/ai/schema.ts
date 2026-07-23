@@ -156,13 +156,14 @@ export const generateReportDeclaration = {
       praktikum: {
         type: Type.OBJECT,
         properties: {
+          judul_laporan: { type: Type.STRING, description: 'Judul laporan/praktikum singkat dan padat yang digenerate secara otomatis berdasarkan konteks/modul JIKA belum ada judul yang diberikan (misalnya "Penghitungan Bibit Ikan Berbasis Computer Vision dan YOLO").' },
           alat_dan_bahan: { type: Type.ARRAY, description: 'Daftar perangkat (Keras, Lunak, Library, Bahasa Pemrograman dll). Contoh array: ["1. Perangkat Keras: PC Lab", "2. Perangkat Lunak: Browser", "3. Bahasa Pemrograman: Python", "4. Library: Pandas, Numpy"]', items: { type: Type.STRING } },
           langkah_kerja: { type: Type.STRING, description: 'Penjelasan naratif (narasi dengan format markdown list agar rapi dan bagus) step-by-step implementasinya' },
           analisis_hasil: conclusionArray,
           cellAnalyses: cellAnalysesArray,
           ulasan_praktikum: { type: Type.STRING, description: 'Ulasan/Feedback pelaksanaan praktikum berupa perasaan, kendala/kesulitan, atau saran. JIKA USER MEMBERIKAN RAW INPUT ULASAN, ANDA WAJIB MERANGKUM/MENYEMPURNAKAN SELURUH POIN DARI INPUT TERSEBUT SECARA DETAIL TANPA ADA YANG HILANG. HANYA gunakan poin dari user, JANGAN mengarang kendala atau pengalaman fiktif yang tidak disebutkan. PENTING: JIKA USER MEMBERIKAN ULASAN, DILARANG KERAS MENGARANG CERITA LAIN ATAU KENDALA LAIN YANG TIDAK DISEBUTKAN USER. JIKA ANDA MENGARANG, ANDA GAGAL.' },
         },
-        required: ['alat_dan_bahan', 'langkah_kerja', 'analisis_hasil', 'cellAnalyses', 'ulasan_praktikum'],
+        required: ['judul_laporan', 'alat_dan_bahan', 'langkah_kerja', 'analisis_hasil', 'cellAnalyses', 'ulasan_praktikum'],
       },
       post_test: {
         type: Type.OBJECT,
@@ -214,11 +215,12 @@ export const generateKuliahReportDeclaration = {
       kuliah: {
         type: Type.OBJECT,
         properties: {
+          judul_laporan: { type: Type.STRING, description: 'Judul laporan singkat dan padat yang digenerate secara otomatis berdasarkan konteks pameran/acara/praktikum JIKA belum ada judul yang diberikan (misalnya jika konteks menceritakan pameran INOTEKAI, buat judul terkait itu).' },
           pendahuluan: { type: Type.STRING, description: 'Bab Pendahuluan yang memuat latar belakang kajian atau tugas secara komprehensif. Susun narasinya dengan rapi.' },
           analisis_hasil: conclusionArray,
           cellAnalyses: kuliahCellAnalysesArray,
         },
-        required: ['pendahuluan', 'analisis_hasil', 'cellAnalyses'],
+        required: ['judul_laporan', 'pendahuluan', 'analisis_hasil', 'cellAnalyses'],
       }
     },
     required: ['kuliah'],

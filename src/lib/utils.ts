@@ -17,6 +17,21 @@ export function generateId(): string {
   });
 }
 
-export function yieldThread(): Promise<void> {
+let lastYieldTime = Date.now();
+export function yieldThread(force = false): Promise<void> {
+  const now = Date.now();
+  if (!force && now - lastYieldTime < 24) {
+    return Promise.resolve();
+  }
+  lastYieldTime = now;
+  if (typeof window !== 'undefined' && window.MessageChannel) {
+    return new Promise(resolve => {
+      const channel = new MessageChannel();
+      channel.port1.onmessage = () => {
+        resolve();
+      };
+      channel.port2.postMessage(null);
+    });
+  }
   return new Promise(resolve => setTimeout(resolve, 0));
 }

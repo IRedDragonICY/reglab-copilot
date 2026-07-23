@@ -61,6 +61,11 @@ export function mergeReportData(
 ): AIReportData {
   const merged: AIReportData = { ...current };
 
+  const incomingJudul = incoming.kuliah?.judul_laporan ?? incoming.praktikum?.judul_laporan ?? (incoming as any).resume?.judul_laporan ?? (incoming as any).judul_laporan;
+  if (incomingJudul) {
+    merged.judulLaporan = incomingJudul;
+  }
+
   const incomingPendahuluan = incoming.kuliah?.pendahuluan;
   if (incomingPendahuluan) {
     merged.pendahuluan = concatOrOverwrite(mode, current.pendahuluan, incomingPendahuluan);
